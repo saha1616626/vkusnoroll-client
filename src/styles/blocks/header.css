@@ -1,0 +1,72 @@
+/* Стили для шапки */
+
+/* Основной контейнер шапки */
+.header-header-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 40px;
+    background-color: #C1CFC4;
+    color: white;
+}
+
+/* Логотип */
+.header-logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #FFFFFF;
+    margin-left: 10px;
+}
+
+.header-logo:hover {
+    transform: translateY(-2px);
+}
+
+/* Кнопки навигационного меню */
+.header-nav-button {
+    font-weight: bold;
+    padding: 9px 0px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    outline: none;
+    transition: color 0.3s;
+    font-size: 16px;
+    background-color: transparent;
+    font-style: italic;
+
+    text-decoration: none; /* Убираем стандартное подчеркивание */
+    position: relative; /* Позволяет создать псевдоэлемент */
+}
+
+.header-nav-button::after {
+    content: ''; /* Создаем псевдоэлемент */
+    display: block;
+    width: 100%; /* Ширина совпадает с текстом */
+    height: 2px; /* Толщина подчеркивания */
+    background: black; /* Цвет подчеркивания */
+    position: absolute;
+    left: 0;
+    bottom: 0; /* Располагаем под текстом */
+    transform: scaleX(0); /* Изначально скрыто */
+    transition: transform 0.3s ease; /* Плавный переход */
+}
+
+.header-nav-button:hover::after {
+    transform: scaleX(1); /* При наведении подчеркивание */
+}
+
+/* Кнопки иконки */
+.header-icons {
+    display: flex;
+    gap: 20px;
+    margin-right: 10px;
+}
+
+.header-icons img {
+    width: 40px;
+}
+
+.header-icons img:hover {
+    transform: translateY(-2px);
+}

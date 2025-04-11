@@ -1,0 +1,147 @@
+/* Стили для авторизации и регистрации */
+
+
+.auth-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.auth-form-container {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+}
+
+/* Крестик закрыть форму */
+.auth-close-button {
+    position: absolute;
+    top: 12px;
+    right: 25px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.3s;
+}
+
+.auth-close-button img {
+    opacity: 0.8;
+    width: 15px;
+    height: 15px;
+    object-fit: contain; /* Пропорция формы */
+}
+
+.auth-close-button img:hover {
+    opacity: 0.5;
+}
+
+.auth-close-button:hover {
+    color: #333;
+}
+
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Заголовок формы */
+.auth-form-title {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.auth-input-group input {
+    width: calc(100% - 32px);
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+}
+
+.auth-password-wrapper {
+    position: relative;
+}
+
+.auth-toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+/* Кнопка иконка отображения пароля */
+.auth-show-password-icon-button {
+    margin-top: 5px;
+    margin-left: -10px;
+    margin-right: 13px;
+    width: 21px;
+    height: 21px;
+    object-fit: contain; /* Пропорция формы */
+}
+
+.auth-form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+/* Кнопки "Забыли пароль?" и "Регистрация" */
+.auth-link {
+    color: #3498db;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.auth-register-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+/* Кнопка войти */
+.auth-submit-button {
+    margin-top: 10px;
+    background-color: #4CAF50;
+    color: white;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.auth-submit-button:hover {
+    background: #2b962e;
+}
+
+/* Сообщение об ошибке */
+.auth-form-error {
+    color: #e74c3c;
+    background: #f8d7da;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 14px;
+    text-align: center;
+    border: 1px solid #ffbaba;
+}
