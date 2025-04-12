@@ -104,19 +104,40 @@ body.no-scroll {
     overflow: hidden;
 }
 
+/* Реструктуризация блока с мета-данными */
+.shopping-cart-item-meta {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
 /* Вес, объем и цена */
 .shopping-cart-item-meta span {
     font-size: 0.9rem;
     color: #34495e;
-    display: block;
-    margin-bottom: 4px;
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
 }
 
+/* Изменяем первый текстовый элемент */
+.shopping-cart-item-meta span:first-child {
+    color: #7f8c8d;
+}
 
 /* Изменяем последний текстовый элемент */
 .shopping-cart-item-meta span:last-child {
     font-weight: 600;
     color: #27ae60;
+    margin-left: auto;
+    font-size: 1.2rem;
+}
+
+/* Контейнер изображения */
+.shopping-cart-item-image-container {
+    height: 100%;
+    display: flex;
+    align-items: center;
 }
 
 /* Изображение блюда */
@@ -176,7 +197,20 @@ body.no-scroll {
     color: #e74c3c;
     padding: 4px;
     margin-left: auto;
+    background-color: transparent;
+    border: transparent;
+    border-radius: 20%;
 }
+
+.shopping-cart-item-remove img {
+    width: 18px;
+    object-fit: cover;
+}
+
+.shopping-cart-item-remove:hover img {
+    transform: translateY(-2px);
+}
+
 
 /* Подвал корзины. Итоги */
 .shopping-cart-footer {

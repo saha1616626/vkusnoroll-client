@@ -6,6 +6,9 @@ import { useCart } from "../contexts/CartContext"; // Контекст корз�
 // Импорт стилей
 import "./../../styles/components/shoppingCart.css";
 
+// Импорт иконок
+import deleteIcon from './../../assets/icons/delete.png'; // Корзина
+
 const ShoppingCart = () => {
 
     /* 
@@ -106,7 +109,9 @@ const ShoppingCart = () => {
                 <div className="shopping-cart-items">
                     {cartItems.map(item => (
                         <div key={item.id} className="shopping-cart-item">
-                            <img src={item.image} alt={item.name} className="shopping-cart-item-image" />
+                            <div className="shopping-cart-item-image-container">
+                                <img src={item.image} alt={item.name} className="shopping-cart-item-image" />
+                            </div>
                             <div className="shopping-cart-item-info">
                                 <h3>{item.name}</h3>
                                 <p className="shopping-cart-item-description">
@@ -125,7 +130,13 @@ const ShoppingCart = () => {
                                     <button
                                         className="shopping-cart-item-remove"
                                         onClick={() => handleRemove(item.id)}
-                                    >🗑️</button>
+                                    >
+                                        <img
+                                            src={deleteIcon}
+                                            alt="delete"
+                                            style={{ cursor: 'pointer' }}
+                                        />
+                                    </button>
                                 </div>
                             </div>
                         </div>

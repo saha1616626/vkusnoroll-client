@@ -13,11 +13,26 @@ export const CartProvider = ({ children }) => {
 
     // Загрузка корзины
     const loadCart = async () => {
-        if (localStorage.getItem('authUserToken')) { // Корзина авторизованного пользователя
-            const { data } = await api.getCart();
-            setCartItems(data);
-        } else {
-            setCartItems(JSON.parse(localStorage.getItem('cart') || '[]')); // Корзина неавторизованного пользователя
+        try {
+            let items; // Список элементов корзины
+            if (localStorage.getItem('authUserToken')) { // Корзина авторизованного пользователя
+                const { data } = await api.getCart();
+                items = data;
+            } else {
+                items = JSON.parse(localStorage.getItem('cart')) || []; // Корзина неавторизованного пользователя
+            }
+
+            // Получаем полные данные блюд (т.к сохранены только кол-во и id)
+            const { data: dishes } = await api.getDishes();
+
+            const enrichedItems = items.map(cartItem => {
+                const dish = dishes.find(d => d.id === cartItem.id); // Если есть блюдо из списка в корзине
+                return dish ? { ...dish, quantity: cartItem.quantity } : null; // Присваиваем данные с учетом имеющихся
+            }).filter(Boolean);
+
+            setCartItems(enrichedItems);
+        } catch (error) {
+            console.error('Error loading cart:', error);
         }
     };
 
