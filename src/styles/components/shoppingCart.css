@@ -83,6 +83,42 @@ body.no-scroll {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
+/* Название блюда */
+.shopping-cart-item-info h3 {
+    font-size: 1.1rem;
+    color: #2c3e50;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+/* Описание блюда */
+.shopping-cart-item-description {
+    font-size: 0.9rem;
+    color: #7f8c8d;
+    line-height: 1.4;
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    /* Ограничение в 2 строки */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Вес, объем и цена */
+.shopping-cart-item-meta span {
+    font-size: 0.9rem;
+    color: #34495e;
+    display: block;
+    margin-bottom: 4px;
+}
+
+
+/* Изменяем последний текстовый элемент */
+.shopping-cart-item-meta span:last-child {
+    font-weight: 600;
+    color: #27ae60;
+}
+
 /* Изображение блюда */
 .shopping-cart-item-image {
     width: 100%;
@@ -91,11 +127,22 @@ body.no-scroll {
     border-radius: 4px;
 }
 
+/* Кол-во */
+.shopping-cart-item-quantity span {
+    font-size: 0.9rem;
+    color: black;
+    display: block;
+    margin-bottom: 0px;
+}
+
 /* Управление количеством */
 .shopping-cart-item-quantity {
     display: flex;
     align-items: center;
     gap: 8px;
+    background-color: #e6da9c;
+    font-weight: 400;
+    border-radius: 10px;
 }
 
 /* Кнопки блюда */
@@ -107,11 +154,13 @@ body.no-scroll {
 
 /* Кнопки изменения кол-ва */
 .shopping-cart-item-quantity button {
-    width: 28px;
+    width: 35px;
     height: 28px;
     border: none;
-    background: #27ae60;
-    color: white;
+    background: transparent;
+    color: black;
+    font-size: 22px;
+    margin-bottom: 5px;
     border-radius: 50%;
     font-weight: 500;
     cursor: pointer;
@@ -119,7 +168,7 @@ body.no-scroll {
 }
 
 .shopping-cart-item-quantity button:hover {
-    background: #219a52;
+    color: gray;
 }
 
 /* Кнопка удаления блюда из корзины */
@@ -133,6 +182,28 @@ body.no-scroll {
 .shopping-cart-footer {
     padding-top: 1.5rem;
     border-top: 2px solid #eee;
+    margin-bottom: 45px;
+}
+
+/* Контейнер суммы заказа */
+.shopping-cart-total {
+    font-size: 1.1rem;
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 1.2rem;
+}
+
+/* Сумма заказа */
+.shopping-cart-total span {
+    font-weight: 700;
+    color: #27ae60;
+}
+
+/* Текст кнопки оформ. заказ */
+.shopping-cart-checkout {
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
 }
 
 /* Кнопка для оформ. заказа */
@@ -143,7 +214,6 @@ body.no-scroll {
     color: white;
     border: none;
     border-radius: 8px;
-    font-size: 1rem;
     cursor: pointer;
     transition: background 0.3s;
 }
@@ -152,13 +222,32 @@ body.no-scroll {
     background: #219a52;
 }
 
+/* Адаптивность для мобильных */
 @media (max-width: 480px) {
+
+    /*  Контейнер корзины */
     .shopping-cart-container {
         width: 100%;
         padding: 15px;
     }
 
+    /* Список товаров */
     .shopping-cart-item {
         grid-template-columns: 60px 1fr;
+    }
+
+    /* Название блюда */
+    .shopping-cart-item-info h3 {
+        font-size: 1rem;
+    }
+
+    /* Описание блюда  */
+    .shopping-cart-item-description {
+        font-size: 0.85rem;
+    }
+
+    /* Контейнер суммы заказа */
+    .shopping-cart-total {
+        font-size: 1rem;
     }
 }

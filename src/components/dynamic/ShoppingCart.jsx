@@ -85,6 +85,16 @@ const ShoppingCart = () => {
         updateCart(newItems);
     };
 
+    // Изменение окончания слова в зависимости от кол-ва товара в корзине
+    const getCorrectWord = (count) => {
+        if (count % 10 === 1 && count % 100 !== 11) {
+            return "товар";
+        } else if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 12 || count % 100 > 14)) {
+            return "товара";
+        }
+        return "товаров";
+    };
+
     if (!isCartOpen) return null; // Если корзина не открыта, то контент не рендерим
 
     return (
@@ -124,7 +134,7 @@ const ShoppingCart = () => {
 
                 <div className="shopping-cart-footer">
                     <div className="shopping-cart-total">
-                        {itemsCount} товар(а) на сумму {total}₽
+                        {itemsCount} {getCorrectWord(itemsCount)} на сумму {total}₽
                     </div>
                     <button className="shopping-cart-checkout">Оформить заказ</button>
                 </div>

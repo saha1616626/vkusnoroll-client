@@ -23,12 +23,23 @@ export const CartProvider = ({ children }) => {
 
     // Обновление корзины
     const updateCart = (items) => {
-        if (localStorage.getItem('authUserToken')) {
-            api.updateCart(items);
-        } else {
-            localStorage.setItem('cart', JSON.stringify(items));
+        const optimizedCart = items.map(({ id, quantity }) => ({ id, quantity })); // Сохраняем только Id и кол-во
+
+        try {
+            if (localStorage.getItem('token')) {
+                api.updateCart(optimizedCart);
+            } else {
+                localStorage.setItem('cart', JSON.stringify(optimizedCart));
+            }
+            setCartItems(items);
+        } catch (e) {
+            console.error('Storage error:', e);
+            // Очистка старых данных при переполнении
+            if (e.name === 'QuotaExceededError') {
+                localStorage.removeItem('cart');
+                setCartItems([]);
+            }
         }
-        setCartItems(items);
     };
 
     // Загрузка данных корзины при инициализации контекста
