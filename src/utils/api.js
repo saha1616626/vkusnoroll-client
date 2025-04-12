@@ -15,6 +15,18 @@ const apiMethods = {
     login: (credentials) => api.post('/auth/user/login', credentials), // Вход
     logout: () => api.post('/auth/user/logout'), // Выход
 
+    // Блюда
+    getDishes: () => api.get('/dishes'),
+    getDishById: (id) => api.get(`/dishes/${id}`),
+
+    // Категории
+    getCategories: () => api.get('/categories'),
+    getСategoryById: (id) => api.get(`/categories/${id}`),
+
+    // Новостные посты
+    getNewsPosts: () => api.get('/newsPosts'),
+    getNewsPostsById: (id) => api.get(`/newsPosts/${id}`),
+
 };
 
 // Экспортируем объект по умолчанию

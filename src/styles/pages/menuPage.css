@@ -1,0 +1,170 @@
+/* Стили для меню ресторана */
+
+/* Контейнер страницы */
+.menu-page-container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Category List */
+
+/* Контейнер списка категорий */
+.menu-category-list {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 100;
+    padding: 1rem 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Скролл контейнер списка категорий */
+.menu-category-scroll {
+    display: flex;
+    overflow-x: auto;
+    gap: 1rem;
+    padding: 0 1rem;
+    scrollbar-width: thin;
+}
+
+/* Элемент категории */
+.menu-category-item {
+    flex-shrink: 0;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 25px;
+    background: #f5f5f5;
+    color: #333;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.menu-category-item:hover {
+    background: #e0e0e0;
+    transform: translateY(-2px);
+}
+
+/* Dish Sections */
+
+/* Секция катрегории с блюдами */
+.menu-category-section {
+    margin: 3rem 0;
+}
+
+/* Заголовок секции катрегории с блюдами */
+.menu-category-title {
+    font-size: 2rem;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #eee;
+}
+
+/* Контейнер сетка для карточек блюд */
+.menu-dish-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 1.2rem;
+    padding: 0 0.5rem;
+}
+
+/* Dish Card */
+
+/* Тело карточки */
+.menu-dish-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* При наведении на карточку */
+.menu-dish-card.hovered {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+}
+
+/* Конейтер для изображения */
+.menu-dish-image-container {
+    aspect-ratio: 1/1;
+    background: #f8f8f8;
+    padding: 20px;
+}
+
+/* Изображение */
+.menu-dish-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Контейнер содержимого карточки под названием блюда */
+.menu-dish-info {
+    padding: 0rem 0.8rem;
+}
+
+/* Заголовок */
+.menu-dish-name {
+    font-size: 1rem;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+    margin-left: 0.8rem;
+    margin-top: 0.8rem;;
+}
+
+/* Описание */
+.menu-dish-description {
+    color: #666;
+    font-size: 0.8rem;
+    line-height: 1.3;
+    margin-bottom: 0.8rem;
+    min-height: 2.8em;
+}
+
+/* Подвал карточки */
+.menu-dish-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.8rem;
+}
+
+/* Ввыод веса, объем или ничего */
+.menu-dish-weight {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+/* Контейнер для цены и кнопки */
+.menu-dish-price-container {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    justify-content: space-between;
+}
+
+/* Цена */
+.menu-dish-price {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #27ae60;
+}
+
+/* Добавить в корзину */
+.menu-dish-add-button {
+    background: #27ae60;
+    color: white;
+    border: none;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.menu-dish-add-button:hover {
+    background: #219a52;
+}

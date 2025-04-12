@@ -14,9 +14,10 @@ import crossIcon from './../../assets/icons/cross.png'; // Крестик
 import './../../styles/forms/auth.css';
 
 const LoginForm = ({ onClose, onLoginSuccess }) => {
+    
     /* 
     ===========================
-     Константы и рефы
+     Состояния
     ===========================
     */
 
