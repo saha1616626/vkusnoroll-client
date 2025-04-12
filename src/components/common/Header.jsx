@@ -5,6 +5,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 // Импорт компонентов
 import LoginForm from "../forms/LoginForm"; // Форма авторизации
+import ShoppingCart from "../dynamic/ShoppingCart"; // Корзина
+import { useCart } from "../contexts/CartContext"; // Контекст корзины
 
 // Импорт стилей
 import './../../styles/global/global.css'; // Глобальные стили
@@ -21,6 +23,8 @@ const Header = () => {
      Состояния
     ===========================
     */
+
+    const { isCartOpen, toggleCart } = useCart(); // Состояние корзины
 
     const navigate = useNavigate();
     const location = useLocation(); // Получаем текущий маршрут
@@ -97,10 +101,14 @@ const Header = () => {
                         src={shoppingCartIcon}
                         alt="Settings"
                         title="Корзина"
-                        // onClick={handleSettingsClick}
+                        onClick={toggleCart}
                         style={{ cursor: 'pointer' }}
                     />
                 </div>
+
+                {/* Корзина */}
+                <ShoppingCart isOpen={isCartOpen} onClose={toggleCart} />
+
             </header>
 
             {/* Форма авторизации */}

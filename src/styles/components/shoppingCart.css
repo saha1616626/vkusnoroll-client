@@ -1,0 +1,164 @@
+/* Стили для корзины */
+
+/* Блокировка скролла */
+body.no-scroll {
+    overflow: hidden;
+}
+
+/* Фон */
+.shopping-cart-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    justify-content: flex-end;
+    backdrop-filter: blur(2px);
+}
+
+/*  Контейнер корзины */
+.shopping-cart-container {
+    width: 400px;
+    max-width: 100%;
+    background: white;
+    height: 100vh;
+    padding: 25px;
+    position: relative;
+    box-shadow: -2px 0 15px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+}
+
+/* Кнопка закрыть корзину */
+.shopping-cart-close {
+    position: absolute;
+    top: 15px;
+    left: -40px;
+    font-size: 24px;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+/* Заголовок корзины */
+.shopping-cart-title {
+    font-size: 1.5rem;
+    color: #2c3e50;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #eee;
+}
+
+/* Список товаров */
+.shopping-cart-items {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    margin-bottom: 1rem;
+}
+
+/* Кастомизация скролла */
+.shopping-cart-items::-webkit-scrollbar {
+    width: 6px;
+}
+
+.shopping-cart-items::-webkit-scrollbar-thumb {
+    background: #27ae60;
+    border-radius: 4px;
+}
+
+/* Карточка товара */
+.shopping-cart-item {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 15px;
+    margin-bottom: 1rem;
+    padding: 15px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* Изображение блюда */
+.shopping-cart-item-image {
+    width: 100%;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 4px;
+}
+
+/* Управление количеством */
+.shopping-cart-item-quantity {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Кнопки блюда */
+.shopping-cart-item-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Кнопки изменения кол-ва */
+.shopping-cart-item-quantity button {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: #27ae60;
+    color: white;
+    border-radius: 50%;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.shopping-cart-item-quantity button:hover {
+    background: #219a52;
+}
+
+/* Кнопка удаления блюда из корзины */
+.shopping-cart-item-remove {
+    color: #e74c3c;
+    padding: 4px;
+    margin-left: auto;
+}
+
+/* Подвал корзины. Итоги */
+.shopping-cart-footer {
+    padding-top: 1.5rem;
+    border-top: 2px solid #eee;
+}
+
+/* Кнопка для оформ. заказа */
+.shopping-cart-checkout {
+    width: 100%;
+    padding: 14px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.shopping-cart-checkout:hover {
+    background: #219a52;
+}
+
+@media (max-width: 480px) {
+    .shopping-cart-container {
+        width: 100%;
+        padding: 15px;
+    }
+
+    .shopping-cart-item {
+        grid-template-columns: 60px 1fr;
+    }
+}

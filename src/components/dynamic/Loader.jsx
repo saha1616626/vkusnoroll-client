@@ -4,7 +4,7 @@ import React from "react";
 import PropTypes from 'prop-types';
 
 // Импорт стилей
-import "./../../styles/components/loader.css"; // Общие стили
+import "./../../styles/components/loader.css";
 
 import loadingIcon from './../../assets/icons/loading.png'
 
@@ -15,7 +15,7 @@ const Loader = ({ isWorking }) => (
 );
 
 Loader.propTypes = {
-    isWorking: PropTypes.func.isRequired, // обязываем передавать функцию обновления
+    isWorking: PropTypes.func.isRequired, // Обязываем передавать функцию обновления
 };
 
 export default Loader;

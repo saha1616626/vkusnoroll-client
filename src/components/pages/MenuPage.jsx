@@ -4,7 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import api from '../../utils/api'; // API сервера
 
+// Импорт компонентов
 import Loader from "../../components/dynamic/Loader";
+import { useCart } from "../contexts/CartContext"; // Контекст корзины
 
 // Импорт иконок
 import leftArrowIcon from './../../assets/icons/leftArrow.png'; // Личный кабинет
@@ -151,7 +153,7 @@ const MenuPage = () => {
                         />
                     ))}
                 </div>
-                </>}
+            </>}
         </div>
     );
 };
@@ -281,6 +283,21 @@ const DishSection = ({ category, dishes }) => (
 // Карточка блюда
 const DishCard = ({ dish }) => {
     const [isHovered, setIsHovered] = useState(false);
+    const { updateCart, cartItems } = useCart(); // Состояние корзины
+
+    // Добавить в корзину
+    const handleAddToCart = () => {
+        const existing = cartItems.find(item => item.id === dish.id); // Проверяем наличие блюда в корзине
+        const newCart = existing
+            ? cartItems.map(item => // Блюдо уже было в корзине
+                item.id === dish.id
+                    ? { ...item, quantity: item.quantity + 1 }
+                    : item
+            )
+            : [...cartItems, { ...dish, quantity: 1 }]; // Блюда не было в корзине
+
+        updateCart(newCart); // Обновляем корзину (Её блюда)
+    };
 
     return (
         <div
@@ -314,7 +331,7 @@ const DishCard = ({ dish }) => {
                         <span className="menu-dish-price">
                             {dish.price} ₽
                         </span>
-                        <button className="menu-dish-add-button">
+                        <button className="menu-dish-add-button" onClick={handleAddToCart}>
                             Добавить
                         </button>
                     </div>
