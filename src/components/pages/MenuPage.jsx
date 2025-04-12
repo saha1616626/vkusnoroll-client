@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import api from '../../utils/api'; // API сервера
 
+import Loader from "../../components/dynamic/Loader";
+
 // Импорт иконок
 import leftArrowIcon from './../../assets/icons/leftArrow.png'; // Личный кабинет
 import rightArrowIcon from './../../assets/icons/rightArrow.png'; // Корзина 
@@ -15,6 +17,14 @@ const MenuPage = () => {
 
     /* 
     ===========================
+     Константы и рефы
+    ===========================
+    */
+
+    const timeOut = 500; // Задержка перед отключением анимации загрузки данных
+
+    /* 
+    ===========================
      Состояния
     ===========================
     */
@@ -22,6 +32,7 @@ const MenuPage = () => {
     const [news, setNews] = useState([]);
     const [categories, setCategories] = useState([]);
     const [groupedDishes, setGroupedDishes] = useState({}); // Группировка блюд по категориям
+    const [isLoading, setIsLoading] = useState(true); // Отображение анимации загрузки при загрузке данных
 
     /* 
     ===========================
@@ -31,6 +42,7 @@ const MenuPage = () => {
 
     useEffect(() => {
         const fetchData = async () => {
+            setIsLoading(true); // Включаем анимацию загрузки данных
             try {
                 // Параллельная загрузка данных
                 const [newsRes, categoriesRes, dishesRes] = await Promise.all([
@@ -82,6 +94,9 @@ const MenuPage = () => {
             } catch (error) {
                 console.error('Ошибка загрузки данных:', error);
             }
+            finally {
+                setTimeout(() => setIsLoading(false), timeOut);
+            }
         };
 
         fetchData();
@@ -114,27 +129,29 @@ const MenuPage = () => {
 
     return (
         <div className="menu-page-container">
-            {/* Список категорий */}
-            <CategoryList
-                categories={categories}
-                onCategoryClick={scrollToCategory}
-            />
-            {/* Список постов */}
-            <NewsList
-                news={news}
-                onNewsClick={handleNewsClick}
-            />
+            {isLoading ? <Loader isWorking={isLoading} /> : <>
+                {/* Список категорий */}
+                <CategoryList
+                    categories={categories}
+                    onCategoryClick={scrollToCategory}
+                />
+                {/* Список постов */}
+                <NewsList
+                    news={news}
+                    onNewsClick={handleNewsClick}
+                />
 
-            {/* Карточки блюд */}
-            <div className="menu-dishes-container">
-                {categories.map(category => (
-                    <DishSection
-                        key={category.id}
-                        category={category}
-                        dishes={groupedDishes[category.id] || []}
-                    />
-                ))}
-            </div>
+                {/* Карточки блюд */}
+                <div className="menu-dishes-container">
+                    {categories.map(category => (
+                        <DishSection
+                            key={category.id}
+                            category={category}
+                            dishes={groupedDishes[category.id] || []}
+                        />
+                    ))}
+                </div>
+                </>}
         </div>
     );
 };
