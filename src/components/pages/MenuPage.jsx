@@ -1,8 +1,12 @@
 // Главная страница. Меню ресторана
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import api from '../../utils/api'; // API сервера
+
+// Импорт иконок
+import leftArrowIcon from './../../assets/icons/leftArrow.png'; // Личный кабинет
+import rightArrowIcon from './../../assets/icons/rightArrow.png'; // Корзина 
 
 // Импорт стилей 
 import './../../styles/pages/menuPage.css'; // Стили меню
@@ -110,8 +114,8 @@ const MenuPage = () => {
 
     return (
         <div className="menu-page-container">
-{/* Список категорий */}
-<CategoryList
+            {/* Список категорий */}
+            <CategoryList
                 categories={categories}
                 onCategoryClick={scrollToCategory}
             />
@@ -120,8 +124,6 @@ const MenuPage = () => {
                 news={news}
                 onNewsClick={handleNewsClick}
             />
-
-            
 
             {/* Карточки блюд */}
             <div className="menu-dishes-container">
@@ -138,39 +140,94 @@ const MenuPage = () => {
 };
 
 // Список постов
-const NewsList = ({ news, onNewsClick }) => (
-    // News.jsx (измененная часть с выводом карточек)
-    <div className="menu-news-page-container">
-        {/* ... остальной код ... */}
+const NewsList = ({ news, onNewsClick }) => {
 
-        <div className="menu-news-horizontal-scroll">
-            {news.map(newsItem => (
-                <div
-                    key={newsItem.id}
-                    className="menu-news-card"
-                    onClick={() => onNewsClick(newsItem.id)}
-                >
-                    <div className="menu-news-card-image-container">
-                        {newsItem.image ? (
-                            <img
-                                src={newsItem.image}
-                                alt={newsItem.title}
-                                className="menu-news-card-image"
-                            />
-                        ) : ( // Отображаем часть описания, если нет изображения 
-                            <div className="menu-news-card-message">
-                                {newsItem.message?.slice(0, 260)}{newsItem.message?.length > 260 && '...'}
-                            </div>
-                        )}
+    const [offset, setOffset] = useState(0);
+    const [isHovered, setIsHovered] = useState(false);
+    const [maxVisible, setMaxVisible] = useState(7);
+    const containerRef = useRef(null);
+    const cardWidth = 280; // Ширина одной карточки + gap (280px + 24px)
+
+    // Рассчёт видимых постов на основе ширины контейнера
+    useEffect(() => {
+        const updateMaxVisible = () => {
+            if (containerRef.current) {
+                const containerWidth = containerRef.current.offsetWidth - 80; // Учёт отступов под кнопки
+                const newMax = Math.floor(containerWidth / cardWidth);
+                setMaxVisible(Math.min(newMax, 7));
+            }
+        };
+
+        updateMaxVisible();
+        const observer = new ResizeObserver(updateMaxVisible);
+        if (containerRef.current) observer.observe(containerRef.current);
+
+        return () => observer.disconnect();
+    }, []);
+
+    const totalNews = news.length;
+    const canGoNext = offset < totalNews - maxVisible;
+    const canGoPrev = offset > 0;
+
+    const handleNext = () => setOffset(prev => Math.min(prev + 1, totalNews - maxVisible));
+    const handlePrev = () => setOffset(prev => Math.max(prev - 1, 0));
+
+    return (
+        <div
+            className="menu-news-page-container"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            ref={containerRef}
+        >
+            <div className="menu-news-horizontal-scroll" style={{ justifyContent: canGoNext || canGoPrev ? 'center' : 'left' }}> {/* Если стрелки есть, значит, контент не умещается и он располагается по центру */}
+                {isHovered && canGoPrev && (
+                    <button className="menu-news-arrow left" onClick={handlePrev}>
+                        <img
+                            src={leftArrowIcon}
+                            alt="leftArrow"
+                            style={{ cursor: 'pointer' }}
+                        />
+                    </button>
+                )}
+
+                {news.slice(offset, offset + maxVisible).map(newsItem => (
+                    <div
+                        key={newsItem.id}
+                        className="menu-news-card"
+                        onClick={() => onNewsClick(newsItem.id)}
+                    >
+                        <div className="menu-news-card-image-container">
+                            {newsItem.image ? (
+                                <img
+                                    src={newsItem.image}
+                                    alt={newsItem.title}
+                                    className="menu-news-card-image"
+                                />
+                            ) : ( // Отображаем часть описания, если нет изображения 
+                                <div className="menu-news-card-message">
+                                    {newsItem.message?.slice(0, 260)}{newsItem.message?.length > 260 && '...'}
+                                </div>
+                            )}
+                        </div>
+                        <div className="menu-news-card-content">
+                            <h3 className="menu-news-card-title">{newsItem.title}</h3>
+                        </div>
                     </div>
-                    <div className="menu-news-card-content">
-                        <h3 className="menu-news-card-title">{newsItem.title}</h3>
-                    </div>
-                </div>
-            ))}
+                ))}
+
+                {isHovered && canGoNext && (
+                    <button className="menu-news-arrow right" onClick={handleNext}>
+                        <img
+                            src={rightArrowIcon}
+                            alt="rightArrow"
+                            style={{ cursor: 'pointer' }}
+                        />
+                    </button>
+                )}
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 // Список категорий
 const CategoryList = ({ categories, onCategoryClick }) => (

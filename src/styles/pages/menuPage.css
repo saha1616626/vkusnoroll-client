@@ -12,11 +12,13 @@
 /* Контейнер списка категорий */
 .menu-category-list {
     position: sticky;
-    top: 0;
+    top: 10px;
     background: white;
     z-index: 100;
-    padding: 1rem 0;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgb(201, 207, 170);
+    border-radius: 10px;
+    margin-top: 20px;
 }
 
 /* Скролл контейнер списка категорий */
@@ -24,7 +26,7 @@
     display: flex;
     overflow-x: auto;
     gap: 1rem;
-    padding: 0 1rem;
+    padding: 1rem 1rem;
     scrollbar-width: thin;
 }
 
@@ -51,6 +53,8 @@
 /* Секция катрегории с блюдами */
 .menu-category-section {
     margin: 3rem 0;
+    /* Отступ для скролла */
+    scroll-margin-top: 100px; 
 }
 
 /* Заголовок секции катрегории с блюдами */
@@ -174,19 +178,64 @@
 
 /* Контейнер списка новостей */
 .menu-news-page-container {
-    padding: 20px;
+    margin-top: 30px;
+    margin-bottom: -30px;
+    margin-left: 0px;
+    margin-right: 0px;
     max-width: 100%;
     overflow-x: hidden;
 }
 
 /* Расположение карточек по горизонтали */
 .menu-news-horizontal-scroll {
+    position: relative;
     display: flex;
     gap: 1.5rem;
-    padding: 1rem 2rem;
-    overflow-x: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #ddd transparent;
+    padding: 1rem 0;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    justify-content: center; /* Центрирование карточек */
+}
+
+/* Кнопки навигации новостей */
+.menu-news-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    z-index: 2;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-news-arrow.left { left: 20px; }
+.menu-news-arrow.right { right: 20px; }
+
+.menu-news-arrow.left img {
+    width: 20px;
+    justify-content: center;
+    align-items: center;
+    margin-right: 3px;
+}
+
+.menu-news-arrow.right img {
+    width: 20px;
+    justify-content: center;
+    align-items: center;
+    margin-left: 3px;
+}
+
+.menu-news-arrow:hover {
+    background: white;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
 }
 
 /* Контейнер карточки */
@@ -244,10 +293,14 @@
     color: #666;
     text-align: left;
     line-height: 1.4;
-    overflow: hidden; /* При переполнении контента */
-    word-wrap: break-word; /* Перенос слов */
-    overflow-wrap: break-word; /* Современный стандарт управления переносом слов */
-    hyphens: auto; /* Автоматические переносы слов с дефисами (Если поддерживает браузер) */
+    overflow: hidden;
+    /* При переполнении контента */
+    word-wrap: break-word;
+    /* Перенос слов */
+    overflow-wrap: break-word;
+    /* Современный стандарт управления переносом слов */
+    hyphens: auto;
+    /* Автоматические переносы слов с дефисами (Если поддерживает браузер) */
 }
 
 /* Стили для скроллбара */
