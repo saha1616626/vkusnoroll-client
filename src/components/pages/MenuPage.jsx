@@ -15,8 +15,8 @@ const MenuPage = () => {
     ===========================
     */
 
+    const [news, setNews] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [dishes, setDishes] = useState([]);
     const [groupedDishes, setGroupedDishes] = useState({}); // Группировка блюд по категориям
 
     /* 
@@ -29,24 +29,30 @@ const MenuPage = () => {
         const fetchData = async () => {
             try {
                 // Параллельная загрузка данных
-                const [categoriesRes, dishesRes] = await Promise.all([
+                const [newsRes, categoriesRes, dishesRes] = await Promise.all([
+                    api.getNewsPosts(),
                     api.getCategories(),
                     api.getDishes()
                 ]);
 
-                // 1. Фильтрация категорий
+                // Фильтрация категорий
                 const activeCategories = categoriesRes.data.filter(category =>
                     !category.isArchived
                 );
 
-                // 2. Создание карты архивных категорий
+                // Фильтрация новостей
+                const activeNews = newsRes.data
+                    .filter(news => !news.isArchived)
+                    .sort((a, b) => b.id - a.id); // Сортируем по дате;
+
+                // Создание карты архивных категорий
                 const archivedCategoryIds = new Set(
                     categoriesRes.data
                         .filter(category => category.isArchived)
                         .map(category => category.id)
                 );
 
-                // 3. Фильтрация и группировка блюд
+                // Фильтрация и группировка блюд
                 const grouped = dishesRes.data.reduce((acc, dish) => { // Проход по всем группам
                     // Пропускаем если:
                     if (
@@ -60,12 +66,13 @@ const MenuPage = () => {
                     return acc; // Передаем результат для последующего вызова
                 }, {});
 
-                // 4. Фильтрация категорий без блюд
+                // Фильтрация категорий без блюд
                 const validCategories = activeCategories.filter(category =>
                     grouped[category.id]?.length > 0
                 );
 
-                // 5. Обновление состояния
+                // Обновление состояния
+                setNews(activeNews); // Устанавливаем полученный список новостей
                 setCategories(validCategories); // Устанавливаем полученный список категорий
                 setGroupedDishes(grouped); // Устанавливаем полученный группированный список блюд по категориям
             } catch (error) {
@@ -90,22 +97,31 @@ const MenuPage = () => {
         }
     };
 
+    // Клик по новости
+    const handleNewsClick = (newsId) => {
+
+    }
+
     /* 
     ===========================
      Рендер
     ===========================
     */
 
-
-
     return (
         <div className="menu-page-container">
-
-            {/* Список категорий */}
-            <CategoryList
+{/* Список категорий */}
+<CategoryList
                 categories={categories}
                 onCategoryClick={scrollToCategory}
             />
+            {/* Список постов */}
+            <NewsList
+                news={news}
+                onNewsClick={handleNewsClick}
+            />
+
+            
 
             {/* Карточки блюд */}
             <div className="menu-dishes-container">
@@ -120,6 +136,41 @@ const MenuPage = () => {
         </div>
     );
 };
+
+// Список постов
+const NewsList = ({ news, onNewsClick }) => (
+    // News.jsx (измененная часть с выводом карточек)
+    <div className="menu-news-page-container">
+        {/* ... остальной код ... */}
+
+        <div className="menu-news-horizontal-scroll">
+            {news.map(newsItem => (
+                <div
+                    key={newsItem.id}
+                    className="menu-news-card"
+                    onClick={() => onNewsClick(newsItem.id)}
+                >
+                    <div className="menu-news-card-image-container">
+                        {newsItem.image ? (
+                            <img
+                                src={newsItem.image}
+                                alt={newsItem.title}
+                                className="menu-news-card-image"
+                            />
+                        ) : ( // Отображаем часть описания, если нет изображения 
+                            <div className="menu-news-card-message">
+                                {newsItem.message?.slice(0, 260)}{newsItem.message?.length > 260 && '...'}
+                            </div>
+                        )}
+                    </div>
+                    <div className="menu-news-card-content">
+                        <h3 className="menu-news-card-title">{newsItem.title}</h3>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
 
 // Список категорий
 const CategoryList = ({ categories, onCategoryClick }) => (

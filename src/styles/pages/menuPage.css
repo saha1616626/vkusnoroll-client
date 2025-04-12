@@ -16,7 +16,7 @@
     background: white;
     z-index: 100;
     padding: 1rem 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Скролл контейнер списка категорий */
@@ -77,14 +77,14 @@
     background: white;
     border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* При наведении на карточку */
 .menu-dish-card.hovered {
     transform: translateY(-5px);
-    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
 }
 
 /* Конейтер для изображения */
@@ -112,7 +112,8 @@
     color: #2c3e50;
     margin-bottom: 0.5rem;
     margin-left: 0.8rem;
-    margin-top: 0.8rem;;
+    margin-top: 0.8rem;
+    ;
 }
 
 /* Описание */
@@ -167,4 +168,98 @@
 
 .menu-dish-add-button:hover {
     background: #219a52;
+}
+
+/* News List */
+
+/* Контейнер списка новостей */
+.menu-news-page-container {
+    padding: 20px;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Расположение карточек по горизонтали */
+.menu-news-horizontal-scroll {
+    display: flex;
+    gap: 1.5rem;
+    padding: 1rem 2rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
+}
+
+/* Контейнер карточки */
+.menu-news-card {
+    flex: 0 0 280px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.menu-news-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Контейнер изображения */
+.menu-news-card-image-container {
+    height: 180px;
+    border-radius: 12px 12px 0 0;
+    overflow: hidden;
+}
+
+/* Изображение */
+.menu-news-card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Текс карточки */
+.menu-news-card-content {
+    padding: 1rem;
+}
+
+/* Заголовок карточки */
+.menu-news-card-title {
+    font-size: 1rem;
+    color: #2c3e50;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Сообщние карточки */
+.menu-news-card-message {
+    height: 200px;
+    padding: 15px;
+    padding-right: 15px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    overflow: hidden;
+    color: #666;
+    text-align: left;
+    line-height: 1.4;
+    overflow: hidden; /* При переполнении контента */
+    word-wrap: break-word; /* Перенос слов */
+    overflow-wrap: break-word; /* Современный стандарт управления переносом слов */
+    hyphens: auto; /* Автоматические переносы слов с дефисами (Если поддерживает браузер) */
+}
+
+/* Стили для скроллбара */
+.menu-news-horizontal-scroll::-webkit-scrollbar {
+    height: 6px;
+}
+
+.menu-news-horizontal-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.menu-news-horizontal-scroll::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 4px;
 }
