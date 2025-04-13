@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
+import { isTokenValid } from '../../utils/auth'; // Проверка токена
 
 // Импорт компонентов
 import LoginForm from "../forms/LoginForm"; // Форма авторизации
@@ -30,6 +31,8 @@ const Header = () => {
     const location = useLocation(); // Получаем текущий маршрут
 
     const [showLoginForm, setShowLoginForm] = useState(false); // Отображение формы авторизации
+    const [showNavigationConfirmModal, setShowNavigationConfirmModal] = useState(false); // Отображение модального окна ухода со страницы без сохранения
+    const [pendingNavigation, setPendingNavigation] = useState(null); // Подтверждение навигации без сохранения
 
     /* 
     ===========================
@@ -56,17 +59,46 @@ const Header = () => {
     ===========================
     */
 
-    // Отображение формы регистрации
-    const handleUserClick = () => {
-        setShowLoginForm(true);
+    // Навигация
+    const handleNavigation = (path, shouldUpdateButton) => {
+        const checkNavigation = () => {
+            navigate(path);
+        };
+
+        // Проверка на несохраненные изменения
+        if (localStorage.getItem('isDirty') === 'true') { // На false isDirty при выходе без сохранения менять не нужно, так как компонент размонтируется и удалит состоние isDirty в localStorage
+            setPendingNavigation(() => checkNavigation);
+            setShowNavigationConfirmModal(true);
+        } else {
+            checkNavigation(); // Пользователь подтвердил переход без сохранения данных
+        }
     };
 
+    // Переход в личный кабинет при наличии прав
+    const handleLaunchingPersonalAccount = async (e) => {
+        const token = localStorage.getItem('authUserToken');
+        if (!isTokenValid(token)) {
+            // Токен и id удаляются из локального хранилища
+            ['authAdminToken', 'clientId']
+                .forEach(key => localStorage.removeItem(key));
+            navigate('/menu');
+            setShowLoginForm(true);
+        }
+        else {
+            navigate('/personal-account');
+        }
+
+    };
+
+    // Обработчики кликов
+    const handleLogoClick = () => handleNavigation('/menu', true);
+
     return (
-        <div style={{position: 'sticky', top: '0', zIndex: '10'}}>
+        <div style={{ position: 'sticky', top: '0', zIndex: '10' }}>
             <header className="header-header-container">
                 <div
                     className="header-logo"
-                    // onClick={handleLogoClick}
+                    onClick={handleLogoClick}
                     style={{ cursor: 'pointer' }}
                     title="Главная страница"
                 >
@@ -94,7 +126,7 @@ const Header = () => {
                         src={userIcon}
                         title="Личный кабинет"
                         alt="User"
-                        onClick={handleUserClick}
+                        onClick={handleLaunchingPersonalAccount}
                         style={{ cursor: 'pointer' }}
                     />
                     <img

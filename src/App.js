@@ -15,6 +15,10 @@ import { CartProvider } from './components/contexts/CartContext'; // Прова�
 import HeaderLayout from './components/layouts/HeaderLayout'; // Header и весь дочерний контент
 import MenuPage from './components/pages/MenuPage'; // Меню ресторана
 import PrivatePersonalAccountRoute from './components/protected/PrivatePersonalAccountRoute'; // Контент личного кабинета, доступный после авторизации
+import PersonalAccountLayout from './components/layouts/PersonalAccountLayout'; // Меню личного кабинета
+import PersonalDataPage from './components/pages/personalAccount/PersonalDataPage'; // Личный кабиент. Личные данные
+import OrdersPage from './components/pages/personalAccount/OrdersPage'; // Личный кабиент. Заказы
+import AddressesPage from './components/pages/personalAccount/AddressesPage'; // Личный кабиент. Адреса
 
 function App() {
 
@@ -61,7 +65,13 @@ function App() {
             <Route path="/menu" element={<MenuPage />} />
             {/* Все защищенные маршруты личного кабинета */}
             <Route element={<PrivatePersonalAccountRoute isAuthenticated={isAuthenticated} />}>
-
+              {/* Меню личного кабинета */}
+              <Route path="/personal-account" element={<PersonalAccountLayout />}>
+                <Route index element={<Navigate to="personal-data" replace />} />  {/* Перенаправление по умолчанию на PersonalDataPage */}
+                <Route path="personal-data" element={<PersonalDataPage />} />
+                <Route path="orders" element={<OrdersPage />} />
+                <Route path="addresses" element={<AddressesPage />} />
+              </Route>
             </Route>
           </Route>
         </Routes>
