@@ -7,6 +7,11 @@ import "../../../styles/pages/personalAccount/personalDataPage.css";
 
 const PersonalDataPage = () => {
 
+    return (
+        <div style={{ margin: '3em 3em' }}>
+            Личные данные
+        </div>
+    );
 }
 
 export default PersonalDataPage;

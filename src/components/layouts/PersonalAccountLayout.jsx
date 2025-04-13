@@ -6,12 +6,20 @@ import { Outlet } from "react-router-dom";
 
 // Импорт компонентов
 import PersonalAccountMenu from "../menus/PersonalAccountMenu";
+import { useAuth } from "../contexts/AuthContext"; // Контекст авторизации
 
 const PersonalAccountLayout = () => {
 
     const location = useLocation(); // Получаем текущий маршрут
     const [showSettingsMenu, setShowSettingsMenu] = useState(true); // Состояние отображения меню
     const navigate = useNavigate(); // Навигация
+    const { isAuthenticated } = useAuth();
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            navigate('/menu');
+        }
+    }, [isAuthenticated, navigate]);
 
     return (
         <div style={{ display: 'flex' }}>

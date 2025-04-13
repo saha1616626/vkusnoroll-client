@@ -8,6 +8,7 @@ import "./../../styles/menus/personalAccountMenu.css";
 
 // Импорт компонентов
 import ConfirmationModal from './../modals/ConfirmationModal';
+import { useAuth } from "../contexts/AuthContext"; // Контекст авторизации
 
 const PersonalAccountMenu = () => {
 
@@ -26,8 +27,10 @@ const PersonalAccountMenu = () => {
 
     // Модальное окно выхода из учетной записи
     const [showExitConfirmModal, setShowExitConfirmModal] = useState(false); // Отображение модального окна
-    
+
     const [selectedButton, setSelectedButton] = useState(0); // Нажатая кнопка в меню
+
+    const { updateAuth } = useAuth(); // Состояния из контекста авторизации
 
     /* 
     ===========================
@@ -73,9 +76,9 @@ const PersonalAccountMenu = () => {
     // Выход из аккаунта
     const handleLogout = () => {
         // Токен и id удаляются из локального хранилища
-        ['authAdminToken', 'clientId']
+        ['authUserToken', 'clientId']
             .forEach(key => localStorage.removeItem(key));
-        // updateAuth(false); // Передаем состояние о выходе
+        updateAuth(false); // Передаем состояние о выходе
         navigate('/menu');
     };
 
@@ -105,31 +108,34 @@ const PersonalAccountMenu = () => {
 
     return (
         <div className="personal-account-menu-menu-container">
-            <h2 className="personal-account-menu-title">Личный кабинет</h2>
-            <nav className="personal-account-menu-nav">
-                {buttonLabels.map((item, index) => (
-                    <button
-                        key={index}
-                        className="personal-account-menu-nav-button"
-                        onClick={() => handleNavigation(`/personal-account/${item.path}`, index)}
-                        style={{
-                            backgroundColor: selectedButton === index ? '#f0f0f0' : 'transparent',
-                            color: selectedButton === index ? '#333' : '#666'
-                        }}
-                    >
-                        {item.label}
-                    </button>
-                ))}
+            {/* Верхняя часть меню */}
+            <div>
+                <h2 className="personal-account-menu-title">Личный кабинет</h2>
+                <nav className="personal-account-menu-nav">
+                    {buttonLabels.map((item, index) => (
+                        <button
+                            key={index}
+                            className="personal-account-menu-nav-button"
+                            onClick={() => handleNavigation(`/personal-account/${item.path}`, index)}
+                            style={{
+                                backgroundColor: selectedButton === index ? '#f0f0f0' : 'transparent',
+                                color: selectedButton === index ? '#333' : '#666'
+                            }}
+                        >
+                            {item.label}
+                        </button>
+                    ))}
+                </nav>
+            </div>
 
-                {/* Кнопка выхода */}
-                <button
-                    onClick={() => handleActionConfirmation()}
-                    className="personal-account-menu-logout-button"
-                >
-                    Выйти
-                </button>
+            {/* Кнопка выхода */}
+            <button
+                onClick={() => handleActionConfirmation()}
+                className="button-control personal-account-menu-logout-button"
+            >
+                Выйти
+            </button>
 
-            </nav>
 
             {/* <NavigationConfirmModal
                 isOpen={showNavigationConfirmModal}

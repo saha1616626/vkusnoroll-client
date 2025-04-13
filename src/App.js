@@ -10,6 +10,8 @@ import { isTokenValid } from './utils/auth'; // Проверка токена
 
 // Контекс
 import { CartProvider } from './components/contexts/CartContext'; // Провайдер контекста корзины
+import { AuthProvider } from './components/contexts/AuthContext'; // Провайдер контекста авторизации
+import { useAuth } from "./components/contexts/AuthContext"; // Контекст авторизации
 
 // Компоненты
 import HeaderLayout from './components/layouts/HeaderLayout'; // Header и весь дочерний контент
@@ -21,69 +23,55 @@ import OrdersPage from './components/pages/personalAccount/OrdersPage'; // Ли�
 import AddressesPage from './components/pages/personalAccount/AddressesPage'; // Личный кабиент. Адреса
 
 function App() {
-
-  // Проверяем состояние токена, если он неактивный, то 
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    const token = localStorage.getItem('authUserToken'); // Актуальный статус авторизации пользователя вводим ограничения для пользователя
-    return isTokenValid(token);
-  });
-
-  // Обновление статуса авторизации
-  const updateAuthStatus = useCallback((status) => {
-    setIsAuthenticated(status);
-  }, []);
-
-  const AppContent = () => {
-
-    const navigate = useNavigate(); // Навигация
-
-    // Проверка срока действия токена при инициализации
-    useEffect(() => {
-      const checkTokenValidity = () => {
-        const token = localStorage.getItem('authUserToken');
-        if (!isTokenValid(token)) {
-          // Токен и id удаляются из локального хранилища
-          ['authAdminToken', 'clientId']
-            .forEach(key => localStorage.removeItem(key));
-          setIsAuthenticated(false);
-          navigate('/'); // TODO навигация
-        }
-      };
-
-      checkTokenValidity();
-      const interval = setInterval(checkTokenValidity, 60000); // Проверка каждую минуту статуса токена
-      return () => clearInterval(interval);
-    }, [navigate]);
-
-    return (
-      // Провайдер корзины
-      <CartProvider>
-        <Routes>
-          {/* Шапка */}
-          <Route path="/" element={<HeaderLayout />} >
-            {/* Главная страница - Список блюд */}
-            <Route path="/menu" element={<MenuPage />} />
-            {/* Все защищенные маршруты личного кабинета */}
-            <Route element={<PrivatePersonalAccountRoute isAuthenticated={isAuthenticated} />}>
-              {/* Меню личного кабинета */}
-              <Route path="/personal-account" element={<PersonalAccountLayout />}>
-                <Route index element={<Navigate to="personal-data" replace />} />  {/* Перенаправление по умолчанию на PersonalDataPage */}
-                <Route path="personal-data" element={<PersonalDataPage />} />
-                <Route path="orders" element={<OrdersPage />} />
-                <Route path="addresses" element={<AddressesPage />} />
-              </Route>
-            </Route>
-          </Route>
-        </Routes>
-      </CartProvider>
-    );
-  }
-
   return (
     <Router>
-      <AppContent />
+      <AuthProvider>   {/* Провайдер авторизации */}
+        <CartProvider> {/* Провайдер корзины */}
+          <AppContent />
+        </CartProvider>
+      </AuthProvider>
     </Router>
   );
 }
+
+const AppContent = () => {
+  const { updateAuth } = useAuth(); // Состояния из контекста авторизации
+  const navigate = useNavigate(); // Навигация
+
+  // Проверка срока действия токена
+  useEffect(() => {
+    const checkTokenValidity = () => {
+      const token = localStorage.getItem('authUserToken');
+      if (!isTokenValid(token)) {
+        updateAuth(false);
+        navigate('/menu');
+      }
+    };
+
+    checkTokenValidity();
+    const interval = setInterval(checkTokenValidity, 60000); // Проверка каждую минуту статуса токена
+    return () => clearInterval(interval);
+  }, [navigate, updateAuth]);
+
+  return (
+    <Routes>
+      {/* Шапка */}
+      <Route path="/" element={<HeaderLayout />}>
+        {/* Главная страница - Список блюд */}
+        <Route path="/menu" element={<MenuPage />} />
+        {/* Защищённые маршруты */}
+        <Route element={<PrivatePersonalAccountRoute />}>
+          {/* Меню личного кабинета */}
+          <Route path="/personal-account" element={<PersonalAccountLayout />}>
+            <Route index element={<Navigate to="personal-data" replace />} />
+            <Route path="personal-data" element={<PersonalDataPage />} />
+            <Route path="orders" element={<OrdersPage />} />
+            <Route path="addresses" element={<AddressesPage />} />
+          </Route>
+        </Route>
+      </Route>
+    </Routes>
+  );
+};
 
 export default App;

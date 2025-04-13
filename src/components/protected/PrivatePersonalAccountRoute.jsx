@@ -1,20 +1,18 @@
 // Частный маршрут. В него обёрнуты все страницы личного кабинета, которые будут доступны после авторизации
 
 import React from "react";
-import { Navigate, Outlet } from 'react-router-dom';
-import { isTokenValid } from '../../utils/auth'; // Проверка токена
+import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext"; // Контекст авторизации
 
-const PrivatePersonalAccountRoute = ({ isAuthenticated }) => {
-    const token = localStorage.getItem('authUserToken');
-    if (!isAuthenticated || !isTokenValid(token)) {
-        // Токен, роль, id и имя удаляется из локального хранилища
-        ['authUserToken', 'clientId']
-            .forEach(key => localStorage.removeItem(key));
-        return <Navigate to="/" replace />;
-        // TODO добавить запуск окна авторизации
-    }
+const PrivatePersonalAccountRoute = () => {
 
-    return <Outlet />; // Если пользователь авторизовался, то Outlet доступен
+    const { isAuthenticated } = useAuth(); // Состояния из контекста авторизации
+    const location = useLocation();
+
+    return isAuthenticated 
+        ? <Outlet /> // Рендерим вложенные маршруты
+        : <Navigate to="/menu" state={{ from: location }} replace />;
+
 };
 
 export default PrivatePersonalAccountRoute;

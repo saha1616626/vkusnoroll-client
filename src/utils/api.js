@@ -28,7 +28,7 @@ api.interceptors.response.use(
             // Токен, роль, id и имя удаляется из локального хранилища
             ['authUserToken', 'clientId']
                 .forEach(key => localStorage.removeItem(key));
-            // window.location.href = '/login'; // Переход на страницу входа
+            // window.location.href = '/menu'; // Переход на страницу входа
         }
         return Promise.reject(error); // Возвращает ошибку для дальнейшей обработки в компонентах
     }

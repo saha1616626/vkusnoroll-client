@@ -69,8 +69,7 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
             // Сохраняем токен из куки (сервер уже установил его)
             localStorage.setItem('authUserToken', response.data.token);
             localStorage.setItem('clientId', response.data.userId)
-            onClose(); // Закрываем форму авторизации
-            navigate('/');
+            onLoginSuccess(); // Вызов колбэка успешной авторизации
         } catch (err) {
             setError('Неверный email или пароль');
         }
