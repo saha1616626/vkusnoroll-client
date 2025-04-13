@@ -58,6 +58,7 @@
     transition: all 0.3s;
     margin-top: auto; /* Прижимает кнопку к низу */
     justify-content: center;
+    margin-bottom: 15px;
 }
 
 .personal-account-menu-logout-button:hover {
