@@ -4,7 +4,7 @@ import React from "react";
 import { Outlet } from "react-router-dom";
 
 // Импорт компонентов
-import Header from "./Header";
+import Header from "../common/Header";
 
 const HeaderLayout = () => {
     return (

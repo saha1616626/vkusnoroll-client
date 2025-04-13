@@ -12,7 +12,7 @@ import { isTokenValid } from './utils/auth'; // Проверка токена
 import { CartProvider } from './components/contexts/CartContext'; // Провайдер контекста корзины
 
 // Компоненты
-import HeaderLayout from './components/common/HeaderLayout'; // Header и весь дочерний контент
+import HeaderLayout from './components/layouts/HeaderLayout'; // Header и весь дочерний контент
 import MenuPage from './components/pages/MenuPage'; // Меню ресторана
 import PrivatePersonalAccountRoute from './components/protected/PrivatePersonalAccountRoute'; // Контент личного кабинета, доступный после авторизации
 
