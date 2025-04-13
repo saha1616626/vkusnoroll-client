@@ -6,6 +6,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 // Стили
 import "./../../styles/menus/personalAccountMenu.css";
 
+// Импорт компонентов
+import ConfirmationModal from './../modals/ConfirmationModal';
+
 const PersonalAccountMenu = () => {
 
     /* 
@@ -18,9 +21,13 @@ const PersonalAccountMenu = () => {
     const location = useLocation();
 
     // Модальное окно подтверждения перехода при наличии несохраненных данных
-    const [showNavigationConfirmModal, setShowNavigationConfirmModal] = useState(false); // Отображение модального окна ухода со страницы
-    const [pendingNavigation, setPendingNavigation] = useState(null); // Подтверждение навигации
-    const [selectedButton, setSelectedButton] = useState(0); // Нажатая кнопка
+    const [showNavigationConfirmModal, setShowNavigationConfirmModal] = useState(false); // Отображение модального окна
+    const [pendingNavigation, setPendingNavigation] = useState(null); // Подтверждение навигации в модальном окне
+
+    // Модальное окно выхода из учетной записи
+    const [showExitConfirmModal, setShowExitConfirmModal] = useState(false); // Отображение модального окна
+    
+    const [selectedButton, setSelectedButton] = useState(0); // Нажатая кнопка в меню
 
     /* 
     ===========================
@@ -48,6 +55,29 @@ const PersonalAccountMenu = () => {
      Обработчики событий
     ===========================
     */
+
+    // Кнопка выход. Вызов модального окна подтверждения выхода из учетной записи
+    const handleActionConfirmation = () => {
+        setShowExitConfirmModal(true); // Отображаем модальное окно
+    };
+
+    // Подтверждение в модальном окне о выходе из учетной записи
+    const handleConfirmAction = async () => {
+        try {
+            await handleLogout();
+        } finally {
+            setShowExitConfirmModal(false); // После выполнения выхода закрываем модальное окно
+        }
+    };
+
+    // Выход из аккаунта
+    const handleLogout = () => {
+        // Токен и id удаляются из локального хранилища
+        ['authAdminToken', 'clientId']
+            .forEach(key => localStorage.removeItem(key));
+        // updateAuth(false); // Передаем состояние о выходе
+        navigate('/menu');
+    };
 
     // Навигация
     const handleNavigation = (path, buttonIndex) => {
@@ -90,6 +120,15 @@ const PersonalAccountMenu = () => {
                         {item.label}
                     </button>
                 ))}
+
+                {/* Кнопка выхода */}
+                <button
+                    onClick={() => handleActionConfirmation()}
+                    className="personal-account-menu-logout-button"
+                >
+                    Выйти
+                </button>
+
             </nav>
 
             {/* <NavigationConfirmModal
@@ -100,6 +139,16 @@ const PersonalAccountMenu = () => {
                 }}
                 onCancel={() => setShowNavigationConfirmModal(false)}
             /> */}
+
+            {/* Модальное окно выход из учетной записи */}
+            <ConfirmationModal
+                isOpen={showExitConfirmModal}
+                title={'Вы уверены, что хотите выйти из своей учётной записи?'}
+                message={'Подтвердите действие'}
+                onConfirm={handleConfirmAction}
+                onCancel={() => setShowExitConfirmModal(false)}
+            />
+
         </div>
     );
 

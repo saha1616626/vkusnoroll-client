@@ -26,3 +26,20 @@ h1 {}
 h2 {}
 
 h3 {}
+
+/* Кнопки управления (Для меню и тд.) */
+.button-control {
+    background-color: #ADADAD;
+    color: #ffffff;
+    font-weight: bold;
+    border: 1px solid black;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    padding: 7px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s; /*Плавный переход при наведении*/
+}
+.button-control:hover {
+    background-color: #999999;
+}
