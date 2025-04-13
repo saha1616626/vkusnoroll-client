@@ -1,6 +1,7 @@
 //  Модальное окно подтверждения действия
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import './../../styles/modals/confirmationModal.css';
 
 const ConfirmationModal = ({
@@ -10,11 +11,34 @@ const ConfirmationModal = ({
     onConfirm,
     onCancel
 }) => {
+    const modalRef = useRef(null); // Ссылка на окно
+
+    // Обработчик клика вне модального окна
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (modalRef.current && !modalRef.current.contains(event.target)) {
+                onCancel(); // Закрываем окно
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [onCancel]);
+
+    // Обработчик нажатия на Escape
+    useEffect(() => {
+        const handleKeyPress = (e) => {
+            if (e.key === 'Escape') onCancel(); // Закрыть окно при нажатии кнопки "Escape"
+        };
+        window.addEventListener('keydown', handleKeyPress);
+        return () => window.removeEventListener('keydown', handleKeyPress);
+    }, [onCancel]);
+
     if (!isOpen) return null;
 
-    return (
+    return ReactDOM.createPortal(
         <div className="confirmation-modal-overlay">
-            <div className="confirmation-modal-container">
+            <div className="confirmation-modal-container" ref={modalRef}>
                 <div className="confirmation-modal-header">
                     <h3>{title}</h3>
                 </div>
@@ -28,7 +52,8 @@ const ConfirmationModal = ({
                     <button className="button-control confirmation-modal-cancel-button" onClick={onCancel}>Отмена</button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body // Рендерим портал в body, чтобы избежать проблем со стилями
     );
 };
 
