@@ -7,6 +7,7 @@ import api from '../../utils/api'; // API сервера
 // Импорт компонентов
 import Loader from "../../components/dynamic/Loader";
 import { useCart } from "../contexts/CartContext"; // Контекст корзины
+import ScrollToTopButton from "../ui/ScrollToTopButton"; // Кнопка скролла
 
 // Импорт иконок
 import leftArrowIcon from './../../assets/icons/leftArrow.png'; // Личный кабинет
@@ -153,6 +154,8 @@ const MenuPage = () => {
                         />
                     ))}
                 </div>
+
+                <ScrollToTopButton />
             </>}
         </div>
     );

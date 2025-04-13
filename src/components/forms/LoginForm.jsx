@@ -14,7 +14,7 @@ import crossIcon from './../../assets/icons/cross.png'; // Крестик
 import './../../styles/forms/auth.css';
 
 const LoginForm = ({ onClose, onLoginSuccess }) => {
-    
+
     /* 
     ===========================
      Состояния
@@ -35,17 +35,25 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
     ===========================
     */
 
+    // Авто перенаправление пользвоателя после авторизации
+    useEffect(() => {
+        const token = localStorage.getItem('authUserToken');
+        if (isTokenValid(token)) { // Если токен валидный
+            // TODO Если пользователь находится на главной странице, то перенаправляем его в личный кабинет. Если пользователь оформлял заказ, то просто скрываем окно авторизации.
+        }
+    }, [navigate]);
+
     // Обработчик клика вне модального окна
     useEffect(() => {
         const handleClickOutside = (event) => {
-          if (modalRef.current && !modalRef.current.contains(event.target)) {
-            onClose();
-          }
+            if (modalRef.current && !modalRef.current.contains(event.target)) {
+                onClose();
+            }
         };
-    
+
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-      }, [onClose]);
+    }, [onClose]);
 
     /* 
     ===========================
@@ -58,7 +66,10 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
         e.preventDefault();
         try {
             const response = await api.login({ email, password });
+            // Сохраняем токен из куки (сервер уже установил его)
             localStorage.setItem('authUserToken', response.data.token);
+            localStorage.setItem('clientId', response.data.userId)
+            onClose(); // Закрываем форму авторизации
             navigate('/');
         } catch (err) {
             setError('Неверный email или пароль');

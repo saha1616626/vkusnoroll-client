@@ -12,9 +12,9 @@
 /* Контейнер списка категорий */
 .menu-category-list {
     position: sticky;
-    top: 10px;
+    top: 80px;
     background: white;
-    z-index: 100;
+    z-index: 1;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border: 1px solid rgb(201, 207, 170);
     border-radius: 10px;

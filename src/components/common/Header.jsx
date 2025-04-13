@@ -62,7 +62,7 @@ const Header = () => {
     };
 
     return (
-        <div>
+        <div style={{position: 'sticky', top: '0', zIndex: '10'}}>
             <header className="header-header-container">
                 <div
                     className="header-logo"
