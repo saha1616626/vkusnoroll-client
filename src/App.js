@@ -11,6 +11,7 @@ import { isTokenValid } from './utils/auth'; // Проверка токена
 // Контекс
 import { CartProvider } from './components/contexts/CartContext'; // Провайдер контекста корзины
 import { AuthProvider } from './components/contexts/AuthContext'; // Провайдер контекста авторизации
+import { NotificationProvider } from './components/contexts/NotificationContext'; // Провайдер уведомления
 import { useAuth } from "./components/contexts/AuthContext"; // Контекст авторизации
 import { useCart } from "./components/contexts/CartContext"; // Контекст корзины
 
@@ -27,9 +28,11 @@ function App() {
   return (
     <Router>
       <AuthProvider>   {/* Провайдер авторизации */}
-        <CartProvider> {/* Провайдер корзины */}
-          <AppContent />
-        </CartProvider>
+        <NotificationProvider> {/* Провайдер уведомления */}
+          <CartProvider> {/* Провайдер корзины */}
+            <AppContent />
+          </CartProvider>
+        </NotificationProvider>
       </AuthProvider>
     </Router>
   );

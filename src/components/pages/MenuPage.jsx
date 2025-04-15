@@ -7,7 +7,8 @@ import api from '../../utils/api'; // API сервера
 // Импорт компонентов
 import Loader from "../../components/dynamic/Loader";
 import { useCart } from "../contexts/CartContext"; // Контекст корзины
-import ScrollToTopButton from "../ui/ScrollToTopButton"; // Кнопка скролла
+import { useNotification } from "../contexts/NotificationContext"; // Контекст Уведомления
+import ScrollToTopButton from "../ui/ScrollToTopButton"; // Кнопка скролла на вверх
 
 // Импорт иконок
 import leftArrowIcon from './../../assets/icons/leftArrow.png'; // Личный кабинет
@@ -284,29 +285,50 @@ const DishSection = ({ category, dishes }) => (
 );
 
 // Карточка блюда
-const DishCard = ({ dish }) => {
-    const [isHovered, setIsHovered] = useState(false);
+const DishCard = ({ dish, onClick }) => {
     const { cartItems, updateCart } = useCart(); // Состояние корзины
+    const [isLoading, setIsLoading] = useState(false); // Анимация загрузки добавления в корзину
+    const { addNotification } = useNotification(); // Отображение сообщения об успешном действии
 
     // Добавить в корзину
-    const handleAddToCart = () => {
-        const existing = cartItems.find(item => item.id === dish.id); // Проверяем наличие блюда в корзине
-        const newQuantity = existing ? existing.quantity + 1 : 1;
-        
-        updateCart(
-            existing
-                ? cartItems.map(item => // Блюдо уже было в корзине
-                    item.id === dish.id ? { ...item, quantity: newQuantity } : item
-                )
-                : [...cartItems, { ...dish, quantity: newQuantity }] // Блюда не было в корзине
-        );
+    const handleAddToCart = async (e) => {
+        e.stopPropagation(); // Не даем открыть карточку блюда
+        if (isLoading) return;
+
+        setIsLoading(true); // Блюдо в процессе добавления
+        try {
+            const existing = cartItems.find(item => item.id === dish.id); // Проверяем наличие блюда в корзине
+            const newQuantity = existing ? existing.quantity + 1 : 1;
+
+            setTimeout(() => {
+                updateCart(
+                    existing
+                        ? cartItems.map(item => // Блюдо уже было в корзине
+                            item.id === dish.id ? { ...item, quantity: newQuantity } : item
+                        )
+                        : [...cartItems, { ...dish, quantity: newQuantity }] // Блюда не было в корзине
+                );
+            }, 500);
+        } finally {
+            setTimeout(() => {
+                // Сообщение о добавлении
+                addNotification(`«${dish.name}» добавлен в корзину`);
+                setIsLoading(false); // Блюдо добавлено. Анимация выкл
+            }, 500);
+        }
+    };
+
+    // Обработчик клика по карточке
+    const handleCardClick = () => {
+        // TODO логикf для раскрытия карточки
+        if (typeof onClick === 'function') {
+            onClick(dish); // Передаем блюдо выше (TODO сделать контекст)
+        }
     };
 
     return (
         <div
-            className={`menu-dish-card ${isHovered ? 'hovered' : ''}`}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            className="menu-dish-card" onClick={handleCardClick}
         >
             <div className="menu-dish-image-container">
                 {dish.image && (
@@ -334,11 +356,20 @@ const DishCard = ({ dish }) => {
                         <span className="menu-dish-price">
                             {dish.price} ₽
                         </span>
-                        <button className="menu-dish-add-button" onClick={handleAddToCart}>
-                            Добавить
+                        <button
+                            onClick={handleAddToCart}
+                            className={`menu-dish-add-button ${isLoading ? 'loading' : ''}`}
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <div className="menu-dish-spinner"></div>
+                            ) : (
+                                'Добавить'
+                            )}
                         </button>
                     </div>
                 </div>
+
             </div>
         </div>
     );

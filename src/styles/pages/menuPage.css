@@ -54,7 +54,7 @@
 .menu-category-section {
     margin: 3rem 0;
     /* Отступ для скролла */
-    scroll-margin-top: 180px; 
+    scroll-margin-top: 180px;
 }
 
 /* Заголовок секции катрегории с блюдами */
@@ -86,7 +86,7 @@
 }
 
 /* При наведении на карточку */
-.menu-dish-card.hovered {
+.menu-dish-card:hover {
     transform: translateY(-5px);
     box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
 }
@@ -160,19 +160,65 @@
 
 /* Добавить в корзину */
 .menu-dish-add-button {
-    background: #27ae60;
+    padding: 8px 16px;
+    background: #4CAF50;
     color: white;
     border: none;
-    padding: 0.4rem 0.8rem;
-    font-size: 0.85rem;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
-    transition: background 0.3s ease;
+    transition: background 0.3s;
 }
 
 .menu-dish-add-button:hover {
     background: #219a52;
 }
+
+/* Анимаци */
+.menu-dish-add-button.loading {
+    background: #81C784;
+    cursor: not-allowed;
+}
+
+/* Анимация загрузки */
+.menu-dish-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #fff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Сообщение об успешном добавлении в корзину */
+.menu-dish-success-toast {
+    width: 130px;
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #4CAF50;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    animation: fadeInOut 2.5s;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0; }
+    10%, 90% { opacity: 1; }
+}
+
 
 /* News List */
 
@@ -194,7 +240,8 @@
     padding: 1rem 0;
     overflow-x: hidden;
     scroll-behavior: smooth;
-    justify-content: center; /* Центрирование карточек */
+    justify-content: center;
+    /* Центрирование карточек */
 }
 
 /* Кнопки навигации новостей */
@@ -216,8 +263,13 @@
     justify-content: center;
 }
 
-.menu-news-arrow.left { left: 20px; }
-.menu-news-arrow.right { right: 20px; }
+.menu-news-arrow.left {
+    left: 20px;
+}
+
+.menu-news-arrow.right {
+    right: 20px;
+}
 
 .menu-news-arrow.left img {
     width: 20px;

@@ -38,6 +38,7 @@ export const CartProvider = ({ children }) => {
 
     // Универсальный метод для обновления корзины
     const updateCart = async (newItems) => {
+
         const isAuth = !!localStorage.getItem('authUserToken'); // Статус авторизации
         const oldItems = cartItems; // Не обновленная корзина
 
