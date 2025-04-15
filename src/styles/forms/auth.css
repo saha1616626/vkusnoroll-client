@@ -1,6 +1,11 @@
 /* Стили для авторизации и регистрации */
 
+/* Блокировка скролла */
+body.no-scroll {
+    overflow: hidden;
+}
 
+/* Фон */
 .auth-overlay {
     position: fixed;
     top: 0;
@@ -14,6 +19,7 @@
     z-index: 1000;
 }
 
+/* Форма */
 .auth-form-container {
     background: white;
     padding: 40px;

@@ -26,8 +26,6 @@ const Header = () => {
     ===========================
     */
 
-    const { isCartOpen, toggleCart } = useCart(); // Состояние корзины
-
     const navigate = useNavigate();
     const location = useLocation(); // Получаем текущий маршрут
 
@@ -36,6 +34,7 @@ const Header = () => {
     const [pendingNavigation, setPendingNavigation] = useState(null); // Подтверждение навигации без сохранения
 
     const { isAuthenticated, updateAuth } = useAuth(); // Состояния из контекста авторизации
+    const { isCartOpen, toggleCart } = useCart(); // Состояние из контекста корзины
 
     /* 
     ===========================

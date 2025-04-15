@@ -286,20 +286,20 @@ const DishSection = ({ category, dishes }) => (
 // Карточка блюда
 const DishCard = ({ dish }) => {
     const [isHovered, setIsHovered] = useState(false);
-    const { updateCart, cartItems } = useCart(); // Состояние корзины
+    const { cartItems, updateCart } = useCart(); // Состояние корзины
 
     // Добавить в корзину
     const handleAddToCart = () => {
         const existing = cartItems.find(item => item.id === dish.id); // Проверяем наличие блюда в корзине
-        const newCart = existing
-            ? cartItems.map(item => // Блюдо уже было в корзине
-                item.id === dish.id
-                    ? { ...item, quantity: item.quantity + 1 }
-                    : item
-            )
-            : [...cartItems, { ...dish, quantity: 1 }]; // Блюда не было в корзине
-
-        updateCart(newCart); // Обновляем корзину (Её блюда)
+        const newQuantity = existing ? existing.quantity + 1 : 1;
+        
+        updateCart(
+            existing
+                ? cartItems.map(item => // Блюдо уже было в корзине
+                    item.id === dish.id ? { ...item, quantity: newQuantity } : item
+                )
+                : [...cartItems, { ...dish, quantity: newQuantity }] // Блюда не было в корзине
+        );
     };
 
     return (

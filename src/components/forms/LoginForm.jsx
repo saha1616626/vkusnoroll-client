@@ -5,6 +5,9 @@ import { useNavigate } from 'react-router-dom';
 import { isTokenValid } from '../../utils/auth'; // Проверка токена
 import api from '../../utils/api'; // API сервера
 
+// Контекс
+import { useCart } from "../contexts/CartContext"; // Контекст корзины
+
 // Импорт иконок
 import eyeIcon from './../../assets/icons/eye.png'
 import hiddenEyeIcon from './../../assets/icons/hiddenEye.png'
@@ -20,6 +23,8 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
      Состояния
     ===========================
     */
+
+    const { loadCart } = useCart(); // Состояние из контекста корзины
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -55,6 +60,12 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [onClose]);
 
+    // Убираем скролл с перекрытой страницы
+    useEffect(() => {
+        document.body.classList.add('no-scroll');
+        return () => document.body.classList.remove('no-scroll');
+    }, [onClose]);
+
     /* 
     ===========================
      Обработчики событий
@@ -70,6 +81,7 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
             localStorage.setItem('authUserToken', response.data.token);
             localStorage.setItem('clientId', response.data.userId)
             onLoginSuccess(); // Вызов колбэка успешной авторизации
+            loadCart(); // Обновляем состав корзины при выходе из учетной записи
         } catch (err) {
             setError('Неверный email или пароль');
         }

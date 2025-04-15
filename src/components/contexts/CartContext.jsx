@@ -16,8 +16,8 @@ export const CartProvider = ({ children }) => {
         try {
             let items; // Список элементов корзины
             if (localStorage.getItem('authUserToken')) { // Корзина авторизованного пользователя
-                const { data } = await api.getCart();
-                items = data;
+                const { data } = await api.getCart(); // Загружаем из БД
+                items = data.items;
             } else {
                 items = JSON.parse(localStorage.getItem('cart')) || []; // Корзина неавторизованного пользователя
             }
@@ -36,26 +36,57 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    // Обновление корзины
-    const updateCart = (items) => {
-        const optimizedCart = items.map(({ id, quantity }) => ({ id, quantity })); // Сохраняем только Id и кол-во
+    // Универсальный метод для обновления корзины
+    const updateCart = async (newItems) => {
+        const isAuth = !!localStorage.getItem('authUserToken'); // Статус авторизации
+        const oldItems = cartItems; // Не обновленная корзина
 
         try {
-            if (localStorage.getItem('token')) {
-                api.updateCart(optimizedCart);
+            // Оптимистичное обновление UI
+            setCartItems(newItems);
+
+            if (isAuth) {
+                // Определяем изменения для синхронизации с API
+                const addedItems = newItems.filter(newItem =>
+                    !oldItems.some(oldItem => oldItem.id === newItem.id)
+                );
+                const removedItems = oldItems.filter(oldItem =>
+                    !newItems.some(newItem => newItem.id === oldItem.id)
+                );
+                const updatedItems = newItems.filter(newItem =>
+                    oldItems.some(oldItem =>
+                        oldItem.id === newItem.id &&
+                        oldItem.quantity !== newItem.quantity
+                    )
+                );
+
+                // Выполняем API запросы
+                await Promise.all([
+                    ...addedItems.map(item =>
+                        api.addItemCart({ dishId: item.id, quantity: item.quantity })
+                    ),
+                    ...updatedItems.map(item =>
+                        api.updateItemCart(item.id, item.quantity)
+                    ),
+                    ...removedItems.map(item =>
+                        api.removeItemCart(item.id)
+                    )
+                ]);
+
+                // Принудительно обновляем данные с сервера
+                await loadCart();
             } else {
+                // Для гостей - сохраняем в localStorage
+                const optimizedCart = newItems.map(({ id, quantity }) => ({ id, quantity }));
                 localStorage.setItem('cart', JSON.stringify(optimizedCart));
             }
-            setCartItems(items);
-        } catch (e) {
-            console.error('Storage error:', e);
-            // Очистка старых данных при переполнении
-            if (e.name === 'QuotaExceededError') {
-                localStorage.removeItem('cart');
-                setCartItems([]);
-            }
+        } catch (error) {
+            // Откатываем изменения при ошибке
+            setCartItems(oldItems);
+            console.error('Cart update error:', error);
         }
     };
+
 
     // Загрузка данных корзины при инициализации контекста
     useEffect(() => {
@@ -65,6 +96,7 @@ export const CartProvider = ({ children }) => {
     // Возвращаем состояние корзины
     return (
         <CartContext.Provider value={{
+            loadCart,
             cartItems,
             isCartOpen,
             toggleCart: () => setIsCartOpen(!isCartOpen),

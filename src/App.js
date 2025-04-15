@@ -12,6 +12,7 @@ import { isTokenValid } from './utils/auth'; // Проверка токена
 import { CartProvider } from './components/contexts/CartContext'; // Провайдер контекста корзины
 import { AuthProvider } from './components/contexts/AuthContext'; // Провайдер контекста авторизации
 import { useAuth } from "./components/contexts/AuthContext"; // Контекст авторизации
+import { useCart } from "./components/contexts/CartContext"; // Контекст корзины
 
 // Компоненты
 import HeaderLayout from './components/layouts/HeaderLayout'; // Header и весь дочерний контент
@@ -36,6 +37,7 @@ function App() {
 
 const AppContent = () => {
   const { updateAuth } = useAuth(); // Состояния из контекста авторизации
+  const { loadCart } = useCart(); // Состояние из контекста корзины
   const navigate = useNavigate(); // Навигация
 
   // Проверка срока действия токена
@@ -45,13 +47,14 @@ const AppContent = () => {
       if (!isTokenValid(token)) {
         updateAuth(false);
         navigate('/menu');
+        loadCart(); // Обновляем состав корзины при выходе из учетной записи (Автоматически при окончании жизни токена или ручной выход)
       }
     };
 
     checkTokenValidity();
     const interval = setInterval(checkTokenValidity, 60000); // Проверка каждую минуту статуса токена
     return () => clearInterval(interval);
-  }, [navigate, updateAuth]);
+  }, [navigate, updateAuth, loadCart]);
 
   return (
     <Routes>

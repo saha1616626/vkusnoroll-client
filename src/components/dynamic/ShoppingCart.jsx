@@ -25,7 +25,7 @@ const ShoppingCart = () => {
     ===========================
     */
 
-    const { cartItems, isCartOpen, toggleCart, updateCart } = useCart(); // Состояние корзины
+    const { cartItems, isCartOpen, toggleCart, updateCart } = useCart(); // Состояния из контекста корзины
 
     const [total, setTotal] = useState(0); // Сумма корзины
     const [itemsCount, setItemsCount] = useState(0); // Кол-во блюд в корзине

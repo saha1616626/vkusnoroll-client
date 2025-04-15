@@ -52,6 +52,13 @@ const apiMethods = {
     getNewsPosts: () => api.get('/newsPosts'),
     getNewsPostsById: (id) => api.get(`/newsPosts/${id}`),
 
+    // Корзина
+    getCart: () => api.get('/cart'),
+    addItemCart: (data) => api.post('/cart/items', data),
+    updateItemCart: (dishId, quantity) => api.put(`/cart/items/${dishId}`, { quantity }),
+    removeItemCart: (dishId) => api.delete(`/cart/items/${dishId}`),
+
+
 };
 
 // Экспортируем объект по умолчанию
