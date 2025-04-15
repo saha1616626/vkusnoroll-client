@@ -87,6 +87,8 @@ export const CartProvider = ({ children }) => {
         }
     };
 
+    // Считаем общее количество товаров
+    const totalItems = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
     // Загрузка данных корзины при инициализации контекста
     useEffect(() => {
@@ -98,6 +100,7 @@ export const CartProvider = ({ children }) => {
         <CartContext.Provider value={{
             loadCart,
             cartItems,
+            totalItems,
             isCartOpen,
             toggleCart: () => setIsCartOpen(!isCartOpen),
             updateCart,

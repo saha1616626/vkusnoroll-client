@@ -33,8 +33,8 @@ const Header = () => {
     const [showNavigationConfirmModal, setShowNavigationConfirmModal] = useState(false); // Отображение модального окна ухода со страницы без сохранения
     const [pendingNavigation, setPendingNavigation] = useState(null); // Подтверждение навигации без сохранения
 
-    const { isAuthenticated, updateAuth } = useAuth(); // Состояния из контекста авторизации
-    const { isCartOpen, toggleCart } = useCart(); // Состояние из контекста корзины
+    const { updateAuth } = useAuth(); // Состояния из контекста авторизации
+    const { totalItems, isCartOpen, toggleCart } = useCart(); // Состояние из контекста корзины
 
     /* 
     ===========================
@@ -143,6 +143,11 @@ const Header = () => {
                         onClick={toggleCart}
                         style={{ cursor: 'pointer' }}
                     />
+                    {totalItems > 0 && (
+                        <span className="header-cart-badge">
+                            {totalItems}
+                        </span>
+                    )}
                 </div>
 
                 {/* Корзина */}

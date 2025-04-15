@@ -25,7 +25,7 @@ const ShoppingCart = () => {
     ===========================
     */
 
-    const { cartItems, isCartOpen, toggleCart, updateCart } = useCart(); // Состояния из контекста корзины
+    const { cartItems, totalItems, isCartOpen, toggleCart, updateCart } = useCart(); // Состояния из контекста корзины
 
     const [total, setTotal] = useState(0); // Сумма корзины
     const [itemsCount, setItemsCount] = useState(0); // Кол-во блюд в корзине
@@ -39,13 +39,13 @@ const ShoppingCart = () => {
     // Подсчет суммы и кол-во блюд в корзине, при изменении ее наполнения
     useEffect(() => {
         const calculateTotals = () => {
-            const count = cartItems?.reduce((acc, item) => acc + item.quantity, 0); // Подсчет кол-ва
+            const count = totalItems; // Подсчет кол-ва
             const sum = cartItems?.reduce((acc, item) => acc + (item.price * item.quantity), 0); // Подсчет суммы
             setItemsCount(count);
             setTotal(sum);
         };
         calculateTotals();
-    }, [cartItems]);
+    }, [cartItems, totalItems]);
 
     // Убираем скролл с перекрытой страницы
     useEffect(() => {
