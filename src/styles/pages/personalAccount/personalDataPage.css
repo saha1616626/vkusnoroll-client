@@ -135,6 +135,8 @@
 
 /* Кнопка сохранить изменения */
 .personal-data-page-save-btn {
+    width: 86%;
+    justify-content: center;
     align-self: center;
     padding: 12px 20px;
     font-weight: 500;

@@ -1,8 +1,9 @@
 // Личный кабинет. Страница "Личные данные"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IMaskInput } from 'react-imask'; // Создание маски на номер телефона
 import api from '../../../utils/api';  // API сервера
+import { useNotification } from "../../contexts/NotificationContext"; // Контекст Уведомления
 
 // Импорт стилей 
 import "../../../styles/pages/personalAccount/personalDataPage.css";
@@ -20,13 +21,28 @@ const PersonalDataPage = () => {
     */
 
     const [formData, setFormData] = useState({ // Данные полей
-        name: '',
-        numberPhone: '',
-        email: ''
+        name: null,
+        numberPhone: null,
+        email: null
     });
 
     const [initialData, setInitialData] = useState({}); // Начальны данные
     const [isDirty, setIsDirty] = useState(false); // Отслеживание несохраненных данных (чтобы не обращаться к сервреу просто так)
+    const { addNotification } = useNotification(); // Отображение уведомлений
+
+    /* 
+    ===========================
+     Функции
+    ===========================
+    */
+
+    // Сравнение данных для определения изменений
+    const checkChanges = useCallback(() => {
+        return (
+            formData.name !== initialData.name ||
+            formData.numberPhone !== initialData.numberPhone
+        );
+    }, [formData.name, formData.numberPhone, initialData.name, initialData.numberPhone]);
 
     /* 
     ===========================
@@ -42,9 +58,9 @@ const PersonalDataPage = () => {
                 const response = await api.getAccountById(clientId); // Получаем данные авторизованного пользователя
                 setInitialData(response.data); // Сохраняем начальные данные
                 setFormData({
-                    name: response.data.name || '',
-                    numberPhone: response.data.numberPhone || '',
-                    email: response.data.email || ''
+                    name: response.data.name || null,
+                    numberPhone: response.data.numberPhone || null,
+                    email: response.data.email || null
                 });
             } catch (error) {
                 console.error('Data upload error:', error);
@@ -52,6 +68,11 @@ const PersonalDataPage = () => {
         };
         fetchUserData();
     }, []);
+
+    // Обновление состояния isDirty при изменениях
+    useEffect(() => {
+        setIsDirty(checkChanges());
+    }, [formData, initialData, checkChanges]);
 
     /* 
     ===========================
@@ -62,33 +83,26 @@ const PersonalDataPage = () => {
     // Изменение значений в полях
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-        setIsDirty(true); // Есть не сохраненные данные
+        setFormData(prev => ({ ...prev, [name]: value || null }));
     };
 
     // Ввод номера телефона
-    const handlePhoneChange = (e) => {
-        const value = e.target.value.replace(/\D/g, ''); // Получаем введенные данные
-        if (value.length <= 11) { // Не более 11 символов
-            handleInputChange({
-                target: {
-                    name: 'numberPhone',
-                    value: value
-                }
-            });
+    const handlePhoneChange = (value) => {
+        const cleanedValue = value.replace(/\D/g, ''); // Получаем введенные данные
+        if (cleanedValue.length <= 11) { // Не более 11 символов
+            setFormData(prev => ({
+                ...prev,
+                numberPhone: cleanedValue || null
+            }));
         }
     };
 
-    // Стереть имя
-    const handleClearName = () => {
-        setFormData(prev => ({ ...prev, name: '' }));
-        setIsDirty(true);
-    };
-
-    // Стереть номер телефона
-    const handleClearNumberPhone = () => {
-        setFormData(prev => ({ ...prev, numberPhone: '' }));
-        setIsDirty(true);
+    // Стереть имя или номер телефона
+    const handleClearField = (field) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: '' // TODO не изменяет isDirty
+        }));
     };
 
     // Обновление данных
@@ -96,23 +110,50 @@ const PersonalDataPage = () => {
         e.preventDefault();
         try {
 
-            if (formData.numberPhone.length !== 11) { // Если номер телефона короткий
-                setFormData(initialData.numberPhone)
+            // Валидация номера телефона перед отправкой
+            const phone = formData.numberPhone?.replace(/\D/g, '') || '';
+            let isPhoneValid = true; // Номер телефона корректный
 
-                if (formData.name.trim() === initialData.name) { // Если имя не поменялось, то изменения не сохраняем
-                    setIsDirty(false); // Нет изменений
-                    return;
-                }
+            if (phone.length > 0 && phone.length !== 11) {
+                isPhoneValid = false;
+                // Отображаем ошибку
+                addNotification('Номер телефона некорректный');
+
+                // Восстанавливаем старый телефон, если текущий некорректный
+                setFormData(prev => ({
+                    ...prev,
+                    numberPhone: initialData.numberPhone
+                }));
             }
 
-            await api.patch(`/account/${initialData.id}`, {
-                name: formData.name.trim(),
-                numberPhone: formData.numberPhone
-            });
-            setIsDirty(false); // Данные сохранены успешно, изменений нету
-            setFormData(formData); // Изменяем начальные данные
+            // Формируем объект для отправки
+            const updatedData = {
+                name: formData.name?.trim() || null
+            };
+
+            // Добавляем телефон только если он валиден
+            if (isPhoneValid && phone) {
+                updatedData.numberPhone = phone;
+            }
+
+            // Отправка данных на сервер
+            const response = await api.updateAccount(initialData.id, updatedData);
+
+            // Обновляем начальные данные из ответа сервера
+            setInitialData(prev => ({
+                ...prev,
+                ...response.data
+            }));
+
         } catch (error) {
             console.error('Ошибка сохранения:', error);
+
+            // Восстанавливаем исходные значения при ошибке
+            setFormData({
+                name: initialData.name,
+                numberPhone: initialData.numberPhone,
+                email: initialData.email
+            });
         }
     };
 
@@ -141,11 +182,11 @@ const PersonalDataPage = () => {
                             value={formData.name}
                             onChange={handleInputChange}
                         />
-                        {formData.name && (
+                        {(formData.name !== initialData.name) && (
                             <button
                                 type="button"
                                 className="personal-data-page-clear-btn"
-                                onClick={handleClearName}
+                                onClick={() => handleClearField('name')}
                             >
                                 ×
                             </button>
@@ -159,16 +200,15 @@ const PersonalDataPage = () => {
                         <IMaskInput
                             mask="+7(000)000-00-00"
                             value={formData.numberPhone}
-                            onAccept={(value) => handlePhoneChange({ target: { value } })}
+                            onAccept={handlePhoneChange}
                             className="personal-data-page-input"
                             placeholder="+7(___) ___-__-__"
-                            inputMode="numeric"
                         />
-                        {formData.numberPhone && (
+                        {(formData.numberPhone !== initialData.numberPhone) && (
                             <button
                                 type="button"
                                 className="personal-data-page-clear-btn"
-                                onClick={handleClearNumberPhone}
+                                onClick={() => handleClearField('numberPhone')}
                             >
                                 ×
                             </button>
@@ -201,7 +241,7 @@ const PersonalDataPage = () => {
                         className={`button-control personal-data-page-save-btn ${isDirty ? 'active' : ''}`}
                         disabled={!isDirty}
                     >
-                        Сохранить изменения
+                        {isDirty ? 'Сохранить изменения' : 'Все изменения сохранены'}
                     </button>
                 </div>
 

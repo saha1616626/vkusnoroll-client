@@ -60,7 +60,7 @@ const apiMethods = {
 
     // Пользователи
     getAccountById: (id) => api.get(`/accounts/user/${id}`),
-    updateAccount: (id, data) => api.patch(`/accounts/user/${id}`, data)
+    updateAccount: (id, data) => api.patch(`/accounts/buyer/${id}`, data)
 
 };
 
