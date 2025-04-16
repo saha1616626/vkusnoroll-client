@@ -58,6 +58,9 @@ const apiMethods = {
     updateItemCart: (dishId, quantity) => api.put(`/cart/items/${dishId}`, { quantity }),
     removeItemCart: (dishId) => api.delete(`/cart/items/${dishId}`),
 
+    // Пользователи
+    getAccountById: (id) => api.get(`/accounts/user/${id}`),
+    updateAccount: (id, data) => api.patch(`/accounts/user/${id}`, data)
 
 };
 

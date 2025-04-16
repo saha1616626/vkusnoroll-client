@@ -1,2 +1,158 @@
 /* Стили личного кабинета страницы "Личные данные" */
 
+/* Контейнер страницы */
+.personal-data-page-container {
+    margin: 3em 5em;
+    max-width: 600px;
+}
+
+/* Заголовок */
+.personal-data-page-title {
+    font-size: 24px;
+    font-weight: 600;
+    font-style: italic;
+    margin-bottom: 3rem;
+    color: #2d3436;
+}
+
+/* Форма с полями */
+.personal-data-page-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Группа поля и названия */
+.personal-data-page-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Заголовок поля */
+.personal-data-page-label {
+    font-size: 14px;
+    color: #636e72;
+    font-weight: 500;
+}
+
+/* Контейнер поля и кнопки сброса поля */
+.personal-data-page-input-wrapper {
+    position: relative;
+}
+
+/* Поле ввода данных */
+.personal-data-page-input {
+    width: 40%;
+    padding: 12px 16px;
+    border: 1px solid #dfe6e9;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s;
+}
+
+/* Фокус на поле ввода данных */
+.personal-data-page-input:focus {
+    outline: none;
+    border-color: #74b9ff;
+    box-shadow: 0 0 0 2px rgba(116, 185, 255, 0.2);
+}
+
+/* Кнопка стереть данные в поле */
+.personal-data-page-clear-btn {
+    position: relative;
+    right: 35px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    color: #636e72;
+    padding: 0 5px;
+}
+
+.personal-data-page-clear-btn:hover {
+    color: #2d3436;
+}
+
+/* Поле ввода email */
+.personal-data-page-email-input {
+    background-color: rgba(223, 230, 233, 0.4);
+    cursor: not-allowed;
+}
+
+/* Контейнер подскази и заголовка поля Email */
+.personal-data-page-label-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Иконка подсказки */
+.personal-data-icon {
+    width: 15px;
+    object-fit: cover;
+}
+
+/* Контейнер подсказки */
+.personal-data-page-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+/* Текст подсказки */
+.personal-data-page-tooltip-text {
+    visibility: hidden;
+    width: 200px;
+    background-color: #2d3436;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 8px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 12px;
+}
+
+/* При наведении на подсказку */
+.personal-data-page-tooltip:hover .personal-data-page-tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+.personal-data-page-button-container {
+    display: flex;
+    justify-content: center;
+    width: 40%;
+    padding: 12px 16px;
+    border: 1px solid transparent;
+}
+
+
+/* Кнопка сохранить изменения */
+.personal-data-page-save-btn {
+    align-self: center;
+    padding: 12px 20px;
+    font-weight: 500;
+    background-color: #dfe6e9;
+    color: #636e72;
+    border: none;
+    border-radius: 8px;
+    cursor: not-allowed;
+    transition: all 0.3s;
+}
+
+/* Если есть несохраненные данные */
+.personal-data-page-save-btn.active {
+    background-color: #20b92da9;
+    color: white;
+    cursor: pointer;
+}
+
+.personal-data-page-save-btn.active:hover {
+    background-color: #20b92d;
+}
