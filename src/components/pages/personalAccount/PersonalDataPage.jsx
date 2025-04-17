@@ -80,7 +80,7 @@ const PersonalDataPage = () => {
     ===========================
     */
 
-    // Изменение значений в полях
+    // Изменение значения в поле "Имя"
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value || null }));
@@ -92,7 +92,7 @@ const PersonalDataPage = () => {
         if (cleanedValue.length <= 11) { // Не более 11 символов
             setFormData(prev => ({
                 ...prev,
-                numberPhone: cleanedValue || null
+                numberPhone: cleanedValue?.trim() || null
             }));
         }
     };
@@ -101,7 +101,7 @@ const PersonalDataPage = () => {
     const handleClearField = (field) => {
         setFormData(prev => ({
             ...prev,
-            [field]: '' // TODO не изменяет isDirty
+            [field]: null // TODO не изменяет isDirty
         }));
     };
 
@@ -111,10 +111,10 @@ const PersonalDataPage = () => {
         try {
 
             // Валидация номера телефона перед отправкой
-            const phone = formData.numberPhone?.replace(/\D/g, '') || '';
+            const phone = formData.numberPhone?.replace(/\D/g, null) || null;
             let isPhoneValid = true; // Номер телефона корректный
 
-            if (phone.length > 0 && phone.length !== 11) {
+            if (phone !== null && phone.length !== 11) {
                 isPhoneValid = false;
                 // Отображаем ошибку
                 addNotification('Номер телефона некорректный');
@@ -132,8 +132,11 @@ const PersonalDataPage = () => {
             };
 
             // Добавляем телефон только если он валиден
-            if (isPhoneValid && phone) {
+            if (isPhoneValid) {
                 updatedData.numberPhone = phone;
+            }
+            else { // Добавляем старый телефон, чтобы не установилось null
+                updatedData.numberPhone = initialData.numberPhone;
             }
 
             // Отправка данных на сервер
@@ -179,10 +182,10 @@ const PersonalDataPage = () => {
                             type="text"
                             className="personal-data-page-input"
                             name="name"
-                            value={formData.name}
+                            value={formData.name || ''}
                             onChange={handleInputChange}
                         />
-                        {(formData.name !== initialData.name) && (
+                        {formData.name && (
                             <button
                                 type="button"
                                 className="personal-data-page-clear-btn"
@@ -204,8 +207,9 @@ const PersonalDataPage = () => {
                             className="personal-data-page-input"
                             placeholder="+7(___) ___-__-__"
                         />
-                        {(formData.numberPhone !== initialData.numberPhone) && (
+                        {formData.numberPhone && (
                             <button
+                                key={1111}
                                 type="button"
                                 className="personal-data-page-clear-btn"
                                 onClick={() => handleClearField('numberPhone')}
