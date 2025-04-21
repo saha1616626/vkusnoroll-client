@@ -1,9 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
+  useLocation,
   useNavigate // Используем useNavigate внутри Router
 } from 'react-router-dom';
 import { isTokenValid } from './utils/auth'; // Проверка токена
@@ -39,25 +40,35 @@ function App() {
 }
 
 const AppContent = () => {
-  const { updateAuth } = useAuth(); // Состояния из контекста авторизации
+  const { isAuthenticated, updateAuth } = useAuth(); // Состояния из контекста авторизации
   const { loadCart } = useCart(); // Состояние из контекста корзины
-  const navigate = useNavigate(); // Навигация
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Проверка срока действия токена
-  useEffect(() => {
-    const checkTokenValidity = () => {
-      const token = localStorage.getItem('authUserToken');
-      if (!isTokenValid(token)) {
-        updateAuth(false);
-        navigate('/menu');
-        loadCart(); // Обновляем состав корзины при выходе из учетной записи (Автоматически при окончании жизни токена или ручной выход)
+  // Проверка токена с защитой от лишних редиректов
+  const checkTokenValidity = useCallback(() => {
+    const token = localStorage.getItem('authUserToken');
+    const isValid = isTokenValid(token);
+
+    // Если токен невалиден, но в контексте ещё считается авторизованным
+    if (!isValid && isAuthenticated) {
+      updateAuth(false); // Синхронизируем контекст
+      loadCart(); // Обновляем состав корзины при выходе из учетной записи (автоматически при окончании жизни токена или ручной выход)
+
+      // Редирект только если не на целевой странице
+      if (location.pathname !== '/menu') {
+        navigate('/menu', { replace: true });
       }
-    };
+    }
+  }, [navigate, updateAuth, loadCart, location.pathname, isAuthenticated]);
 
+
+  // Запуск интервала
+  useEffect(() => {
     checkTokenValidity();
-    const interval = setInterval(checkTokenValidity, 60000); // Проверка каждую минуту статуса токена
+    const interval = setInterval(checkTokenValidity, 60000); // Мониторинг состояния токена каждую минуту
     return () => clearInterval(interval);
-  }, [navigate, updateAuth, loadCart]);
+  }, [checkTokenValidity]);
 
   return (
     <Routes>
