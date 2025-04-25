@@ -10,6 +10,12 @@
     color: white;
 }
 
+/* Группировка элементов */
+.header-group-element {
+    display: flex;
+    gap: 100px
+}
+
 /* Логотип */
 .header-logo {
     font-size: 24px;
@@ -36,25 +42,35 @@
     background-color: transparent;
     font-style: italic;
 
-    text-decoration: none; /* Убираем стандартное подчеркивание */
-    position: relative; /* Позволяет создать псевдоэлемент */
+    text-decoration: none;
+    /* Убираем стандартное подчеркивание */
+    position: relative;
+    /* Позволяет создать псевдоэлемент */
 }
 
 .header-nav-button::after {
-    content: ''; /* Создаем псевдоэлемент */
+    content: '';
+    /* Создаем псевдоэлемент */
     display: block;
-    width: 100%; /* Ширина совпадает с текстом */
-    height: 2px; /* Толщина подчеркивания */
-    background: black; /* Цвет подчеркивания */
+    width: 100%;
+    /* Ширина совпадает с текстом */
+    height: 2px;
+    /* Толщина подчеркивания */
+    background: black;
+    /* Цвет подчеркивания */
     position: absolute;
     left: 0;
-    bottom: 0; /* Располагаем под текстом */
-    transform: scaleX(0); /* Изначально скрыто */
-    transition: transform 0.3s ease; /* Плавный переход */
+    bottom: 0;
+    /* Располагаем под текстом */
+    transform: scaleX(0);
+    /* Изначально скрыто */
+    transition: transform 0.3s ease;
+    /* Плавный переход */
 }
 
 .header-nav-button:hover::after {
-    transform: scaleX(1); /* При наведении подчеркивание */
+    transform: scaleX(1);
+    /* При наведении подчеркивание */
 }
 
 /* Кнопки иконки */
@@ -89,4 +105,67 @@
     min-width: 20px;
     text-align: center;
     pointer-events: none;
+}
+
+/* Стили для блока времени работы */
+.header-delivery-time {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 24px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+
+.header-time-icon {
+    width: 24px;
+    filter: brightness(0) invert(1);
+}
+
+.header-time-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Стили для рабочего дня */
+.working-day {
+    background: #4CAF50;
+    color: white;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.2);
+}
+
+.working-day .time-range {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.working-day .work-status {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+/* Стили для выходного дня */
+.day-off {
+    background: #F44336;
+    color: white;
+    box-shadow: 0 2px 8px rgba(244, 67, 54, 0.2);
+}
+
+.day-off-text {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.next-workday {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+/* Анимация при наведении */
+.header-delivery-time:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }

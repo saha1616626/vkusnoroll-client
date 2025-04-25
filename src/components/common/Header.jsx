@@ -9,6 +9,7 @@ import LoginForm from "../forms/LoginForm"; // Форма авторизации
 import ShoppingCart from "../dynamic/ShoppingCart"; // Корзина
 import { useCart } from "../contexts/CartContext"; // Контекст корзины
 import { useAuth } from "../contexts/AuthContext"; // Контекст авторизации
+import api from '../../utils/api'; // API сервера
 
 // Импорт стилей
 import './../../styles/global/global.css'; // Глобальные стили
@@ -17,6 +18,7 @@ import './../../styles/blocks/header.css'; // Стили для шапки
 // Импорт иконок
 import userIcon from './../../assets/icons/user.png'; // Личный кабинет
 import shoppingCartIcon from './../../assets/icons/shoppingCart.png'; // Корзина 
+import clockIcon from './../../assets/icons/clock.png'; // Часы 
 
 const Header = () => {
 
@@ -36,6 +38,8 @@ const Header = () => {
     const { updateAuth } = useAuth(); // Состояния из контекста авторизации
     const { totalItems, isCartOpen, toggleCart } = useCart(); // Состояние из контекста корзины
 
+    const [deliveryTime, setDeliveryTime] = useState({ time: null, isWorking: false, nextWorkDate: null, nextStartTime: null }); // Время работы ресторана
+
     /* 
     ===========================
      Эффекты
@@ -54,6 +58,65 @@ const Header = () => {
             navigate('/menu'); // Перенаправляем на маршрут по умолчанию
         }
     }, [navigate, location.pathname]);
+
+    // Установка времени работы ресторана при загрузке страницы
+    useEffect(() => {
+        const loadTime = async () => {
+            try {
+                const response = await api.getCurrentDeliveryTime();
+                //  Проверка ответа
+                if (response.data) {
+                    setDeliveryTime({
+                        time: formatTime(response?.data.start, response?.data.end),
+                        isWorking: response?.data.isWorking,
+                        nextWorkDate: response?.data.nextWorkDate,
+                        nextStartTime: response?.data.nextStartTime
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки времени:', error);
+            }
+        };
+        loadTime();
+    }, []);
+
+    /* 
+    ===========================
+    Управление данными
+    ===========================
+    */
+
+    // Форматирование интервала времени
+    const formatTime = (startTime, endTime) => {
+        if (!startTime || !endTime) return '—';
+
+        const formatSingleTime = (timeString) => {
+            try {
+                return timeString.split(':').slice(0, 2).join(':'); // Убираем миллисекунды
+            } catch (e) {
+                return '—';
+            }
+        };
+
+        return `${formatSingleTime(startTime)} – ${formatSingleTime(endTime)}`;
+    };
+
+    // Форматирование даты следующего открытия ресторана
+    const formatNextWorkDate = (dateString) => {
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('ru-RU', {
+            day: 'numeric',
+            month: 'long'
+        }).format(date);
+    };
+
+    // Форматирование даты завтрашнего открытия
+    const isTomorrow = (dateString) => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return new Date(dateString).toDateString() === tomorrow.toDateString();
+    };
+
 
     /* 
     ===========================
@@ -96,6 +159,12 @@ const Header = () => {
     // Обработчики кликов
     const handleLogoClick = () => handleNavigation('/menu', true);
 
+    /* 
+    ===========================
+     Рендер
+    ===========================
+    */
+
     return (
         <div style={{ position: 'sticky', top: '0', zIndex: '10' }}>
             <header className="header-header-container">
@@ -108,24 +177,58 @@ const Header = () => {
                     ВкусноРолл
                 </div>
 
-                {/* Адрес доставки */}
+                <div className="header-group-element">
+                    {/* Адрес доставки */}
 
-                {/* Время доставки */}
+                    {/* Время работы доставки */}
+                    <div className={`header-delivery-time ${deliveryTime.isWorking ? 'working-day' : 'day-off'}`}
+                        title={deliveryTime.isWorking ? "Режим работы" : "Сегодня выходной"}>
+                        <img
+                            src={clockIcon}
+                            aria-label="Время работы ресторана"
+                            alt="Clock"
+                            className="header-time-icon"
+                        />
+                        <div className="header-time-text">
+                            {deliveryTime.isWorking ? (
+                                <>
+                                    <span className="time-range">{deliveryTime.time}</span>
+                                    <span className="work-status">Доставка работает</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="day-off-text">Выходной день</span>
+                                    {deliveryTime.nextWorkDate ? (
+                                        <span className="next-workday">
+                                            {isTomorrow(deliveryTime.nextWorkDate)
+                                                ? `Завтра с ${deliveryTime.nextStartTime.split(':').slice(0, 2).join(':')}`
+                                                : `Откроется ${formatNextWorkDate(deliveryTime.nextWorkDate)}`}
+                                        </span>
+                                    ) : (
+                                        <span className="next-workday">
+                                            Режим работы не настроен
+                                        </span>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                    </div>
 
-                <nav style={{ display: 'flex', gap: '30px', justifyContent: 'center', margin: '0', padding: '0' }}>
-                    {['Контакты', 'Новости'].map((label, index) => {
-                        const path = label === 'Контакты' ? '/contacts' : '/news';
-                        return (
-                            <button
-                                className="header-nav-button"
-                                key={index}
-                                onClick={() => handleNavigation(path, true)}
-                            >
-                                {label}
-                            </button>
-                        );
-                    })}
-                </nav>
+                    <nav style={{ display: 'flex', gap: '30px', justifyContent: 'center', margin: '0', padding: '0' }}>
+                        {['Контакты', 'Новости'].map((label, index) => {
+                            const path = label === 'Контакты' ? '/contacts' : '/news';
+                            return (
+                                <button
+                                    className="header-nav-button"
+                                    key={index}
+                                    onClick={() => handleNavigation(path, true)}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
+                    </nav>
+                </div>
 
                 <div className="header-icons">
                     <img

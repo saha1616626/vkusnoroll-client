@@ -60,7 +60,10 @@ const apiMethods = {
 
     // Пользователи
     getAccountById: (id) => api.get(`/accounts/user/${id}`),
-    updateAccount: (id, data) => api.patch(`/accounts/buyer/${id}`, data)
+    updateAccount: (id, data) => api.patch(`/accounts/buyer/${id}`, data),
+
+    // Рабочее время ресторана
+    getCurrentDeliveryTime: () => api.get(`/deliveryWork/current`), // Получение актуального времени доставки
 
 };
 
