@@ -1,1 +1,148 @@
 /* Стили личного кабинета страницы "Адреса" */
+
+/* Основной контейнер */
+.addresses-page {
+    margin: 3em 5em;
+    max-width: 800px;
+}
+
+/* Шапка страницы */
+.addresses-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+}
+
+/* Заголовок */
+.addresses-page-title {
+    font-size: 24px;
+    font-weight: 600;
+    font-style: italic;
+    color: #2d3436;
+    margin-bottom: 3rem;
+}
+
+/* Кнопка добавить адрес */
+.addresses-page-add-btn {
+    background: #20b92d;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.addresses-page-add-btn:hover {
+    background: #189922;
+}
+
+/* Контейнер списка адресов */
+.addresses-list {
+    display: grid;
+    gap: 1.5rem;
+}
+
+/* Карточка адреса */
+.address-card {
+    background: white;
+    border: 1px solid #dfe6e9;
+    border-radius: 12px;
+    padding: 1.5rem;
+    position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.address-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.address-card.selected {
+    border-color: #74b9ff;
+    background: #f8fbff;
+}
+
+/* Радиокнопка выбора */
+.address-card-header input[type="radio"] {
+    accent-color: #20b92d;
+    width: 18px;
+    height: 18px;
+    margin-right: 12px;
+}
+
+/* Меню адреса */
+.address-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+/* Кнопка меню */
+.address-card-menu-btn {
+    background: none;
+    border: none;
+    padding: 6px 6px;
+    cursor: pointer;
+    border-radius: 8px;
+    margin: -6px
+}
+
+.address-card-menu-btn:hover {
+    background: rgba(128, 128, 128, 0.247);
+}
+
+.address-card-menu-btn img {
+    width: 16px;
+    object-fit: cover;
+    margin-bottom: -3px;
+}
+
+/* Контейнер кнопок действий меню */
+.address-card-menu {
+    position: absolute;
+    right: 1rem;
+    top: 3rem;
+    background: white;
+    border: 1px solid #dfe6e9;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+/* Кнопка дейстия меню */
+.menu-item {
+    display: block;
+    width: 100%;
+    padding: 8px 16px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+}
+
+.menu-item:hover {
+    background: #f8f9fa;
+}
+
+.menu-item.delete {
+    color: #e74c3c;
+}
+
+/* Тело карточки */
+.address-card-body p {
+    margin: 4px 0;
+    color: #636e72;
+    font-size: 14px;
+}
+
+/* Сообщение о пустом списке */
+.addresses-page-empty {
+    text-align: center;
+    color: #636e72;
+    padding: 2rem;
+    border: 2px dashed #dfe6e9;
+    border-radius: 12px;
+}

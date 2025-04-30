@@ -65,7 +65,13 @@ const apiMethods = {
     // Рабочее время ресторана
     getCurrentDeliveryTime: () => api.get(`/deliveryWork/current`), // Получение актуального времени доставки
 
+    // Адреса доставки
+    getDeliveryAddressesByIdClient: (id) => api.get(`/deliveryAddresses/${id}`), 
+
+    // Зоны доставки
+    getDeliveryZones: () => api.get('/deliverySettings/delivery-zones'),
+
 };
 
 // Экспортируем объект по умолчанию
-export default apiMethods;
+export default apiMethods

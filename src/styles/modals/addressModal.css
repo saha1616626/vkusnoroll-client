@@ -1,0 +1,140 @@
+/* Стили для модального окна "Адреса доставки" */
+
+/* Блокировка скролла */
+body.no-scroll {
+    overflow: hidden;
+}
+
+/* Пространство за модальным окном */
+.address-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 10;
+}
+
+/* Модальное окно запущено */
+.address-modal-overlay.active {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Модальное окно */
+.address-modal-container {
+    background: white;
+    width: 90vw;
+    height: 80vh;
+    border-radius: 12px;
+    display: grid;
+    grid-template-columns: 350px 1fr;
+}
+
+/* Левая часть окна - поля и список */
+.address-modal-sidebar {
+    padding: 20px;
+    border-right: 1px solid #eee;
+    overflow-y: auto;
+}
+
+/* Правая часть окна - карта */
+.address-modal-map {
+    height: 100%;
+    border-radius: 0 12px 12px 0;
+    overflow: hidden;
+    /* Добавлено для обрезки */
+    background: #f0f0f0;
+    /* Фон на время загрузки */
+}
+
+/* Кнопка добавить адрес */
+.address-modal-add-btn {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+    background: #20b92d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+/* Элемент адреса */
+.address-modal-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+}
+
+/* Данные адреса */
+.address-modal-item-info {
+    margin-left: 12px;
+}
+
+/* Кнопки в адресе */
+.address-modal-item-actions button {
+    margin-right: 8px;
+    padding: 4px 8px;
+    background: #f0f0f0;
+    border: none;
+    border-radius: 4px;
+}
+
+/* Форма добавления и редактирования адреса */
+.address-modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: space-between;
+    height: 100%;
+}
+
+/* Контейнер выпадающего списка адресов поиска */
+.suggestions-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 8px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+}
+
+/* Адрес списка */
+.address-modal-suggestion-item {
+    padding: 12px;
+    cursor: pointer;
+    background: #f8f9fa;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.address-modal-suggestion-item:hover {
+    background: #e9ecef;
+}
+
+.address-modal-suggestion-item:not(:last-child) {
+    border-bottom: 1px solid #eee;
+}
+
+/* Дополнительные поля адресе */
+.address-modal-extra-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* Кнопка сохранить адрес */
+.address-modal-save-btn {
+    margin-top: 20px;
+    padding: 12px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}

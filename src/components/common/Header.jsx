@@ -10,6 +10,7 @@ import ShoppingCart from "../dynamic/ShoppingCart"; // Корзина
 import { useCart } from "../contexts/CartContext"; // Контекст корзины
 import { useAuth } from "../contexts/AuthContext"; // Контекст авторизации
 import api from '../../utils/api'; // API сервера
+import { useAddressModal } from "../contexts/AddressModalContext"; // Контекст модального окна "Адреса доставки"
 
 // Импорт стилей
 import './../../styles/global/global.css'; // Глобальные стили
@@ -37,6 +38,7 @@ const Header = () => {
 
     const { updateAuth } = useAuth(); // Состояния из контекста авторизации
     const { totalItems, isCartOpen, toggleCart } = useCart(); // Состояние из контекста корзины
+    const { openModal } = useAddressModal(); // Состояние для модального окна "Адреса доставки"
 
     const [deliveryTime, setDeliveryTime] = useState({ time: null, isWorking: false, nextWorkDate: null, nextStartTime: null }); // Время работы ресторана
 
@@ -179,6 +181,9 @@ const Header = () => {
 
                 <div className="header-group-element">
                     {/* Адрес доставки */}
+                    <button onClick={() => openModal('list')}>
+                        Адреса доставки
+                    </button>
 
                     {/* Время работы доставки */}
                     <div className={`header-delivery-time ${deliveryTime.isWorking ? 'working-day' : 'day-off'}`}

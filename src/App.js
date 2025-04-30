@@ -13,6 +13,7 @@ import { isTokenValid } from './utils/auth'; // Проверка токена
 import { CartProvider } from './components/contexts/CartContext'; // Провайдер контекста корзины
 import { AuthProvider } from './components/contexts/AuthContext'; // Провайдер контекста авторизации
 import { NotificationProvider } from './components/contexts/NotificationContext'; // Провайдер уведомления
+import { AddressModalProvider } from './components/contexts/AddressModalContext'; // Провайдер модального окна "Адреса доставки"
 import { useAuth } from "./components/contexts/AuthContext"; // Контекст авторизации
 import { useCart } from "./components/contexts/CartContext"; // Контекст корзины
 
@@ -24,6 +25,7 @@ import PersonalAccountLayout from './components/layouts/PersonalAccountLayout'; 
 import PersonalDataPage from './components/pages/personalAccount/PersonalDataPage'; // Личный кабиент. Личные данные
 import OrdersPage from './components/pages/personalAccount/OrdersPage'; // Личный кабиент. Заказы
 import AddressesPage from './components/pages/personalAccount/AddressesPage'; // Личный кабиент. Адреса
+import AddressModal from './components/modals/AddressModal';
 
 function App() {
   return (
@@ -31,7 +33,9 @@ function App() {
       <AuthProvider>   {/* Провайдер авторизации */}
         <NotificationProvider> {/* Провайдер уведомления */}
           <CartProvider> {/* Провайдер корзины */}
-            <AppContent />
+            <AddressModalProvider> {/* Провайдер модального окна "Адреса доставки" */}
+              <AppContent />
+            </AddressModalProvider>
           </CartProvider>
         </NotificationProvider>
       </AuthProvider>
@@ -71,23 +75,26 @@ const AppContent = () => {
   }, [checkTokenValidity]);
 
   return (
-    <Routes>
-      {/* Шапка */}
-      <Route path="/" element={<HeaderLayout />}>
-        {/* Главная страница - Список блюд */}
-        <Route path="/menu" element={<MenuPage />} />
-        {/* Защищённые маршруты */}
-        <Route element={<PrivatePersonalAccountRoute />}>
-          {/* Меню личного кабинета */}
-          <Route path="/personal-account" element={<PersonalAccountLayout />}>
-            <Route index element={<Navigate to="personal-data" replace />} />
-            <Route path="personal-data" element={<PersonalDataPage />} />
-            <Route path="orders" element={<OrdersPage />} />
-            <Route path="addresses" element={<AddressesPage />} />
+    <>
+      <Routes>
+        {/* Шапка */}
+        <Route path="/" element={<HeaderLayout />}>
+          {/* Главная страница - Список блюд */}
+          <Route path="/menu" element={<MenuPage />} />
+          {/* Защищённые маршруты */}
+          <Route element={<PrivatePersonalAccountRoute />}>
+            {/* Меню личного кабинета */}
+            <Route path="/personal-account" element={<PersonalAccountLayout />}>
+              <Route index element={<Navigate to="personal-data" replace />} />
+              <Route path="personal-data" element={<PersonalDataPage />} />
+              <Route path="orders" element={<OrdersPage />} />
+              <Route path="addresses" element={<AddressesPage />} />
+            </Route>
           </Route>
         </Route>
-      </Route>
-    </Routes>
+      </Routes>
+      <AddressModal /> {/* Провайдер модального окна "Адреса доставки" */}
+    </>
   );
 };
 
