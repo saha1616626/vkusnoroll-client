@@ -100,14 +100,14 @@ body.no-scroll {
 
 /* Элементы списка адресов */
 .address-modal-item {
-    display: flex;
-    gap: 12px;
-    padding: 15px;
-    background: white;
+    position: relative;
+    border: 1px solid #e9ecef;
     border-radius: 8px;
-    margin-bottom: 10px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s;
+    padding: 15px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
 }
 
 .address-modal-item:hover {
@@ -269,7 +269,8 @@ body.no-scroll {
     border-radius: 8px;
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.3s;
+    transition: background 0.3s, transform 0.2s, box-shadow 0.2s;
+    /* Плавные переходы */
     margin-top: 20px;
 }
 
@@ -280,6 +281,41 @@ body.no-scroll {
 
 .address-modal-save-btn:hover:not(:disabled) {
     background: #189924;
+    transform: translateY(-2px);
+    /* Лёгкий эффект подъёма при наведении */
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+    /* Тень становится более выраженной */
+}
+
+/* Кнопка назад */
+.address-modal-back-btn {
+    width: 100%;
+    padding: 14px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s, box-shadow 0.2s;
+    /* Плавные переходы */
+    margin-top: 20px;
+}
+
+.address-modal-back-btn:hover {
+    background: #5a6268;
+    /* Более темный серый цвет при наведении */
+    transform: translateY(-2px);
+    /* Лёгкий эффект подъёма при наведении */
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+    /* Тень становится более выраженной */
+}
+
+.address-modal-back-btn:active {
+    transform: translateY(1px);
+    /* Эффект нажатия */
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+    /* Уменьшаем тень при нажатии */
 }
 
 /* Уведомления внутри модального окна */
@@ -288,7 +324,9 @@ body.no-scroll {
 .address-modal-notifications {
     position: fixed;
     top: 1.5%;
-    bottom: 0px;
+    /* Если сделать bottom без контроля высоты, то он может в прозрачном состоянии 
+    перекрыть контент и при нажатии на него модальное окно закроется, так как 
+    уведомления не входят в состав модального окна и ссылка на них не распространяется */
     left: 50%;
     transform: translateX(-50%);
     z-index: 1100;

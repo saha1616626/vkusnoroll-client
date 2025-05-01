@@ -26,9 +26,10 @@ const AddressModal = () => {
 
     const modalRef = useRef(null); // Ссылка на модальное окно "Адреса доставки"
 
-    const { isOpen, closeModal, mode, openModal } = useAddressModal(); // Контекст управляет состоянием отображения модального окна
+    const { isOpen, closeModal, mode, openModal, editAddress, previousMode } = useAddressModal(); // Контекст управляет состоянием отображения модального окна
     const [addresses, setAddresses] = useState([]); // Список адресов клиента
-    const [selectedAddress, setSelectedAddress] = useState(null); // Выбранный адрес для сохранения
+    const [editedAddress, setEditedAddress] = useState(null); // Редактируемый адрес
+    const [selectedAddress, setSelectedAddress] = useState(null); // Выбранный адрес в списке
     const [deliveryZones, setDeliveryZones] = useState([]); // Зоны доставки из БД
     const [formData, setFormData] = useState({ // Формат данных формы
         city: '',
@@ -41,9 +42,10 @@ const AddressModal = () => {
         comment: ''
     });
     const [suggestions, setSuggestions] = useState([]); // Выбор адреса в списке
+    const [suggestionsShow, setSuggestionsShow] = useState(false); // Отображение подсказки при вводе
     const { addNotification } = useNotification(); // Отображение уведомлений глобально
     const [localNotifications, setLocalNotifications] = useState([]); // Отображение уведомлений внутри модального окна
-    const ymaps = useYmaps(); // API янедкс карт
+    const { ymaps, isReady } = useYmaps(); // API янедкс карт
     const mapRef = useRef(null);  // Хранит экземпляр карты и DOM элемент после создания карты
 
     const [searchQuery, setSearchQuery] = useState(''); // Запрос для поиска адреса
@@ -66,26 +68,6 @@ const AddressModal = () => {
     ===========================
     */
 
-    // Инициализация компонента при монтировании и размонтировани
-    useEffect(() => {
-        if (mode === 'create') { // В режиме редактирования очищаем поля
-            setSearchQuery(''); // Поиск
-            setSuggestions([]); // Подсказка
-            setSelectedAddress(null); // Выбранный адрес
-        }
-
-        if (mode === 'edit') { // В режиме редактирования вставляем выбранный адрес
-
-        }
-
-    }, [mode]);
-
-    /* 
-    ===========================
-     Управление картой
-    ===========================
-    */
-
     // Функция для добавления локальных уведомлений
     const addLocalNotification = useCallback((message, type = 'info') => {
         const id = Date.now();
@@ -95,6 +77,133 @@ const AddressModal = () => {
             setLocalNotifications(prev => prev.filter(n => n.id !== id));
         }, 3000);
     }, []);
+
+    // Валидация зоны доставки
+    const validateDeliveryZone = useCallback(async (coordinates) => {
+        if (!ymaps) return false;
+
+        try {
+            // Создаем временный массив для хранения созданных полигонов
+            const tempPolygons = [];
+
+            const isValid = deliveryZones.some(zone => {
+                if (!Array.isArray(zone.coordinates) || zone.coordinates.length < 3) {
+                    console.error('Некорректные координаты зоны:', zone);
+                    return false;
+                }
+
+                // Создаем полигон
+                const polygon = new ymaps.Polygon([zone.coordinates], {}, {
+                    fillOpacity: 0.001,
+                    strokeWidth: 0
+                });
+
+                if (!polygon.geometry) {
+                    console.error('Невозможно создать геометрию полигона');
+                    return false;
+                }
+
+                // Добавляем полигон во временный массив и на карту
+                tempPolygons.push(polygon);
+                mapRef.current.geoObjects.add(polygon);
+
+                // Проверка принадлежности точки
+                return polygon.geometry.contains(coordinates);
+            });
+
+            // Удаляем все временные полигоны после проверки
+            tempPolygons.forEach(polygon => {
+                mapRef.current.geoObjects.remove(polygon);
+            });
+
+            return isValid;
+
+        } catch (e) {
+            console.error('Ошибка проверки зоны:', e);
+            return false;
+        }
+    }, [deliveryZones, ymaps]);
+
+    // Геокодирование адреса (Из текста в координаты)
+    const geocodeAddress = useCallback(async (address) => {
+        try {
+            const geocode = await ymaps.geocode(address, { results: 1 });
+            const firstGeoObject = geocode.geoObjects.get(0);
+
+            if (!firstGeoObject) {
+                addLocalNotification('Адрес не найден');
+                return;
+            }
+
+            const coordinates = firstGeoObject.geometry.getCoordinates();
+            const displayName = firstGeoObject.getAddressLine();
+
+            setEditedAddress({ displayName, coordinates });
+            setSearchQuery(displayName);
+
+            // Обновляем карту
+            if (mapRef.current) {
+                mapRef.current.setCenter(coordinates, 17, {
+                    duration: 1000, // Продолжительность анимации в миллисекундах
+                    checkZoomRange: true,
+                    timingFunction: 'ease-in-out'
+                });
+            }
+        } catch (error) {
+            console.error('Ошибка геокодирования:', error);
+            addLocalNotification('Ошибка определения координат');
+        }
+    }, [ymaps, addLocalNotification]);
+
+    // Инициализация компонента при монтировании и размонтировани
+    useEffect(() => {
+        if (mode === 'create') { // В режиме редактирования очищаем поля
+            setFormData({
+                city: '',
+                street: '',
+                house: '',
+                isPrivateHome: false,
+                entrance: '',
+                floor: '',
+                apartment: '',
+                comment: ''
+            }); // Сбрасываем поля в режиме добавления
+            setSearchQuery(''); // Поиск
+            setSuggestions([]); // Очищаем список адресов в подсказе поиска
+            setEditedAddress(null); // Выбранный адрес
+        }
+
+        if (mode === 'edit' && editAddress) { // В режиме редактирования при наличии передаваемого адреса вставляем выбранный адрес
+
+            // Устанавливаем данные формы из редактируемого адреса
+            setFormData({
+                city: editAddress.city,
+                street: editAddress.street,
+                house: editAddress.house,
+                isPrivateHome: editAddress.isPrivateHome,
+                entrance: editAddress.entrance || '',
+                floor: editAddress.floor || '',
+                apartment: editAddress.apartment || '',
+                comment: editAddress.comment || ''
+            });
+
+            // Формируем полный адрес для поиска
+            const fullAddress = `${editAddress.city}, ${editAddress.street} ${editAddress.house}`;
+            setSearchQuery(fullAddress);
+
+            // Геокодирование адреса при отсутствии координат
+            geocodeAddress(fullAddress);
+
+            setSuggestions([]); // Очищаем список адресов в подсказе поиска
+        }
+
+    }, [mode, editAddress, geocodeAddress]);
+
+    /* 
+    ===========================
+     Управление картой
+    ===========================
+    */
 
     // Загрузка адресов пользователя и зон доставки
     useEffect(() => {
@@ -115,6 +224,21 @@ const AddressModal = () => {
                     );
                     mapRef.current.map.setBounds(bounds);
                 }
+
+                // Устанавливаем выбранный адрес из локального хранилища
+                if (addressesRes.data.length > 0 && mode === 'list') {
+                    const savedAddressId = localStorage.getItem('AddressIdAuthorizedUser');
+                    const targetAddress = addressesRes.data.find(addr =>
+                        addr.id.toString() === savedAddressId?.toString()
+                    );
+
+                    // Устанавливаем адрес из хранилища или первый из списка
+                    setSelectedAddress(targetAddress || addressesRes.data[0]);
+
+                    // При выходе из учетной записи AddressIdAuthorizedUser не нужно удалять, поскольку 
+                    // у другого авторизованного пользователя id адреса не совпадет с AddressIdAuthorizedUser 
+                    // и будет в любом случае выбран первый адрес.
+                }
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
                 addLocalNotification('Не удалось загрузить данные');
@@ -122,22 +246,53 @@ const AddressModal = () => {
         };
 
         if (isOpen) loadData();
-    }, [isOpen, ymaps, addLocalNotification]);
+    }, [isOpen, ymaps, addLocalNotification, mode]);
+
+    // Сброс выбранного адреса при закрытии
+    useEffect(() => {
+        if (!isOpen) {
+            setSelectedAddress(null);
+            setSearchQuery(''); // Поиск
+            setSuggestions([]); // Очищаем список адресов в подсказе поиска
+        }
+    }, [isOpen]);
+
+    // Выбор адреса
+    useEffect(() => {
+        if (!selectedAddress || !ymaps) return; // Проверяем наличие адреса и загрузку API
+
+        // Дополнительная проверка на случай, если адрес был сброшен
+        if (!selectedAddress?.city || !selectedAddress?.street || !selectedAddress?.house) return;
+
+        const fullAddress = `${selectedAddress.city}, ${selectedAddress.street} ${selectedAddress.house}`;
+        geocodeAddress(fullAddress);
+
+        const clientId = localStorage.getItem('clientId');
+        if (!!clientId) {
+            // Сохраняем в локальное хранилище выбранный адрес
+            localStorage.setItem('AddressIdAuthorizedUser', selectedAddress.id)
+        }
+    }, [selectedAddress, geocodeAddress, ymaps]);
 
     // Обработчик выбора адреса в поиске
     const handleSelectSuggestion = useCallback(async (suggestion) => {
+
         setSearchQuery(suggestion.displayName);
-        setSuggestions([]); // Очищаем список адресов в подсказе
+        setSuggestions([]); // Очищаем список адресов в подсказе поиска
 
         // Сохраняем выбранные координаты
-        setSelectedAddress({
+        setEditedAddress({
             displayName: suggestion.displayName,
             coordinates: suggestion.coordinates
         });
 
         // Обновляем координаты на карте (ТОЛЬКО МЕТКИ)
         if (mapRef.current) {
-            mapRef.current.setCenter(suggestion.coordinates, 17);
+            mapRef.current.setCenter(suggestion.coordinates, 17, {
+                duration: 1000, // Продолжительность анимации в миллисекундах
+                checkZoomRange: true,
+                timingFunction: 'ease-in-out'
+            });
 
             // Удаляем только метки, сохраняя полигоны
             mapRef.current.geoObjects.removeAll((geoObject) => {
@@ -185,7 +340,7 @@ const AddressModal = () => {
 
     // Эффект для инициализации карты (без полигонов)
     useEffect(() => {
-        if (!ymaps || !isOpen || !document.getElementById('address-modal-map')) return; // Если карта не загружена или окно не открыто
+        if (!ymaps || !isReady || !isOpen || !document.getElementById('address-modal-map')) return; // Если карта не загружена или окно не открыто
 
         // Устанавливаем карту
         ymaps.ready(() => {
@@ -202,6 +357,8 @@ const AddressModal = () => {
             // Обработчик клика по карте
             const clickListener = async (e) => {
                 try {
+                    if (mode === 'list') return; // Нельзя поставить маркер в режиме "list"
+
                     const coordinates = e.get('coords');
 
                     // Проверка формата координат
@@ -240,7 +397,7 @@ const AddressModal = () => {
                     });
 
                     // Обновляем состояние выбранного адреса
-                    setSelectedAddress({
+                    setEditedAddress({
                         displayName: address,
                         coordinates: coordinates
                     });
@@ -264,7 +421,7 @@ const AddressModal = () => {
                 }
             };
         });
-    }, [ymaps, isOpen, addLocalNotification, handleSelectSuggestion, deliveryZones]);
+    }, [ymaps, isReady, isOpen, addLocalNotification, handleSelectSuggestion, deliveryZones]);
 
     // Эффект для отрисовки/обновления полигонов при изменении deliveryZones
     useEffect(() => {
@@ -297,16 +454,16 @@ const AddressModal = () => {
             });
 
             // Восстанавливаем метку если есть выбранный адрес (при перерисовке)
-            if (selectedAddress) {
+            if (editedAddress) {
                 const placemark = new ymaps.Placemark(
-                    selectedAddress.coordinates,
-                    { balloonContent: selectedAddress.displayName },
+                    editedAddress.coordinates,
+                    { balloonContent: editedAddress.displayName },
                     { preset: 'islands#redIcon' }
                 );
                 mapRef.current.geoObjects.add(placemark);
             }
         });
-    }, [deliveryZones, ymaps, selectedAddress, POLYGON_STYLE]); // Добавляем полигоны при изменении зон
+    }, [deliveryZones, ymaps, editedAddress, POLYGON_STYLE]); // Добавляем полигоны при изменении зон
 
     // Закрываем модальное окно при клике на фон
     useEffect(() => {
@@ -369,52 +526,16 @@ const AddressModal = () => {
         if (debouncedSearchQuery) {
             handleAddressSearch(debouncedSearchQuery);
         }
-    }, [debouncedSearchQuery, handleAddressSearch]);
-
-
-    // Валидация зоны доставки
-    const validateDeliveryZone = async (coordinates) => {
-        if (!ymaps) return false; // Если карта недоступна, значит, зону нельзя выбрать
-
-        try {
-            // Проверяем все зоны
-            return deliveryZones.some(zone => {
-                if (!Array.isArray(zone.coordinates) || zone.coordinates.length < 3) { // Проверка структуры данных
-                    console.error('Некорректные координаты зоны:', zone);
-                    return false;
-                }
-
-                // Создаем полигон
-                const polygon = new ymaps.Polygon([zone.coordinates], {}, {
-                    fillOpacity: 0.001,
-                    strokeWidth: 0
-                });
-
-                if (!polygon.geometry) {
-                    console.error('Невозможно создать геометрию полигона');
-                    return false;
-                }
-                mapRef.current.geoObjects.add(polygon);
-
-                // Явная проверка принадлежности точки
-                const contains = polygon.geometry.contains(coordinates);
-                console.log('Zone check:', zone.id, 'contains', coordinates, '->', contains);
-                return contains;
-            });
-        } catch (e) {
-            console.error('Ошибка проверки зоны:', e);
-            return false;
-        }
-    };
+    }, [debouncedSearchQuery, handleAddressSearch, searchQuery, editedAddress]);
 
     // Сохранение адреса
     const handleSaveAddress = async () => {
-        if (!selectedAddress?.coordinates) {
-            addLocalNotification('Выберите адрес на карте');
+        if (!editedAddress?.coordinates) {
+            addLocalNotification('Выберите адрес на карте или введите запрос');
             return;
         }
 
-        const isValid = await validateDeliveryZone(selectedAddress.coordinates);
+        const isValid = await validateDeliveryZone(editedAddress.coordinates);
         if (!isValid) {
             addLocalNotification('Адрес находится вне зоны доставки');
             return;
@@ -423,22 +544,15 @@ const AddressModal = () => {
         try {
             setIsSaving(true);
 
-            // // Формируем объект адреса
-            // const addressData = {
-            //     ...formData,
-            //     coordinates: selectedAddress.coordinates,
-            //     clientId: localStorage.getItem('clientId')
-            // };
+            if (previousMode === null) { // Если предыдущий режим работы модального окна "null", значит выходим из модального окна
+                addNotification('Адрес успешно сохранен', 'success');
+                closeModal();
+            }
 
-            // // Отправляем на сервер
-            // const response = await api.saveDeliveryAddress(addressData);
-
-            // // Обновляем список адресов
-            // setAddresses(prev => [...prev, response.data]);
-
-            addNotification('Адрес успешно сохранен', 'success');
-            closeModal();
-            // mode('list'); // Возвращаемся в режим списка
+            if (previousMode === 'list') { // Если предыдущий режим работы модального окна "list", значит переходим в список
+                addLocalNotification('Адрес успешно сохранен');
+                openModal('list'); // Возвращаемся в режим списка
+            }
 
         } catch (error) {
             console.error('Ошибка сохранения:', error);
@@ -482,7 +596,9 @@ const AddressModal = () => {
                         <>
                             <button
                                 className="address-modal-add-btn"
-                                onClick={() => openModal('create')}
+                                onClick={() => {
+                                    openModal('create', null, 'list');
+                                }}
                             >
                                 + Новый адрес
                             </button>
@@ -500,7 +616,7 @@ const AddressModal = () => {
                                             {address.comment && ` (${address.comment})`}
                                         </p>
                                         <div className="address-modal-item-actions">
-                                            <button onClick={() => openModal('edit')}>Изменить</button>
+                                            <button onClick={() => openModal('edit', address, 'list')}>Изменить</button>
                                             <button onClick={() => handleDelete(address.id)}>Удалить</button>
                                         </div>
                                     </div>
@@ -520,13 +636,15 @@ const AddressModal = () => {
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
+                                        onFocus={() => setSuggestionsShow(true)} // При нажатии на поле открываются подсказки поиска
+                                        onBlur={() => setTimeout(() => setSuggestionsShow(false), 200)}
                                         placeholder="Введите адрес..."
                                         className="address-modal-input"
                                         style={{ width: 'calc(100% - 33.6px)' }}
                                     />
                                 </div>
 
-                                {suggestions.length > 0 && (
+                                {suggestionsShow && suggestions.length > 0 && (
                                     <div className="address-modal-suggestions-list">
                                         {suggestions.map((suggestion, index) => (
                                             <div
@@ -601,18 +719,32 @@ const AddressModal = () => {
                                         <label>Комментарий</label>
                                         <textarea
                                             placeholder=""
-                                            maxLength="300" />
+                                            maxLength="300"
+                                            value={formData.comment}
+                                            onChange={(e) => handleExtraFieldChange('comment', e.target.value)} />
                                     </div>
                                 </div>
                             </div>
 
-                            <button
-                                className="address-modal-save-btn"
-                                onClick={handleSaveAddress}
-                                disabled={isSaving}
-                            >
-                                {isSaving ? 'Сохранение...' : 'Сохранить'}
-                            </button>
+                            <div style={{
+                                display: previousMode === 'list' ? 'flex' : '',
+                                gap: previousMode === 'list' ? '1.0rem' : ''
+                            }}>
+                                <button
+                                    style={{ display: previousMode === 'list' ? '' : 'none' }}
+                                    className="address-modal-back-btn"
+                                    onClick={() => openModal('list')}
+                                >
+                                    Назад
+                                </button>
+                                <button
+                                    className="address-modal-save-btn"
+                                    onClick={handleSaveAddress}
+                                    disabled={isSaving}
+                                >
+                                    {isSaving ? 'Сохранение...' : 'Сохранить'}
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -620,7 +752,7 @@ const AddressModal = () => {
                 <div id="address-modal-map" className="address-modal-map" />
             </div>
 
-            {/* ЛОкальные уведомления */}
+            {/* Локальные уведомления */}
             <div className="address-modal-notifications">
                 {localNotifications.map((notification) => (
                     <div

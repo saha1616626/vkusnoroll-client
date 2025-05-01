@@ -115,7 +115,7 @@ const AddressesPage = () => {
                                 <button
                                     className="address-card-menu-btn"
                                     onClick={(e) => {
-                                        e.stopPropagation(); // Останавливаем распространение события
+                                        e.stopPropagation(); // Останавливаем распространение события radio
                                         setShowMenuId(showMenuId === address.id ? null : address.id);
                                     }}
                                 >
@@ -123,9 +123,12 @@ const AddressesPage = () => {
                                 </button>
 
                                 {showMenuId === address.id && (
-                                    <div className="address-card-menu" ref={modalRef}>
+                                    <div className="address-card-menu" ref={modalRef}
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Останавливаем распространение события radio
+                                        }}>
                                         <button className="menu-item"
-                                            onClick={() => openModal('edit')}
+                                            onClick={() => openModal('edit', address)}
                                         >
                                             Редактировать
                                         </button>
