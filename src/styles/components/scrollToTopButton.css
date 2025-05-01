@@ -21,6 +21,7 @@
 }
 
 .scroll-to-top img {
+    margin-bottom: 3px;
     width: 24px;
     object-fit: cover;
 }

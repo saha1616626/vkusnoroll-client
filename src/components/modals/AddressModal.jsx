@@ -13,6 +13,9 @@ import { useDebounce } from '../Hooks/useDebounce'; // Задержка поис
 // Стили
 import "./../../styles/modals/addressModal.css";
 
+// Импорт иконок
+import crossIcon from './../../assets/icons/cross.png'; // Крестик 
+
 const AddressModal = () => {
 
     /* 
@@ -23,7 +26,7 @@ const AddressModal = () => {
 
     const modalRef = useRef(null); // Ссылка на модальное окно "Адреса доставки"
 
-    const { isOpen, closeModal, mode } = useAddressModal(); // Контекст управляет состоянием отображения модального окна
+    const { isOpen, closeModal, mode, openModal } = useAddressModal(); // Контекст управляет состоянием отображения модального окна
     const [addresses, setAddresses] = useState([]); // Список адресов клиента
     const [selectedAddress, setSelectedAddress] = useState(null); // Выбранный адрес для сохранения
     const [deliveryZones, setDeliveryZones] = useState([]); // Зоны доставки из БД
@@ -38,7 +41,8 @@ const AddressModal = () => {
         comment: ''
     });
     const [suggestions, setSuggestions] = useState([]); // Выбор адреса в списке
-    const { addNotification } = useNotification(); // Отображение уведомлений
+    const { addNotification } = useNotification(); // Отображение уведомлений глобально
+    const [localNotifications, setLocalNotifications] = useState([]); // Отображение уведомлений внутри модального окна
     const ymaps = useYmaps(); // API янедкс карт
     const mapRef = useRef(null);  // Хранит экземпляр карты и DOM элемент после создания карты
 
@@ -58,9 +62,39 @@ const AddressModal = () => {
 
     /* 
     ===========================
+     Настройка страницы
+    ===========================
+    */
+
+    // Инициализация компонента при монтировании и размонтировани
+    useEffect(() => {
+        if (mode === 'create') { // В режиме редактирования очищаем поля
+            setSearchQuery(''); // Поиск
+            setSuggestions([]); // Подсказка
+            setSelectedAddress(null); // Выбранный адрес
+        }
+
+        if (mode === 'edit') { // В режиме редактирования вставляем выбранный адрес
+
+        }
+
+    }, [mode]);
+
+    /* 
+    ===========================
      Управление картой
     ===========================
     */
+
+    // Функция для добавления локальных уведомлений
+    const addLocalNotification = useCallback((message, type = 'info') => {
+        const id = Date.now();
+        setLocalNotifications(prev => [...prev, { id, message, type }]);
+
+        setTimeout(() => {
+            setLocalNotifications(prev => prev.filter(n => n.id !== id));
+        }, 3000);
+    }, []);
 
     // Загрузка адресов пользователя и зон доставки
     useEffect(() => {
@@ -83,17 +117,17 @@ const AddressModal = () => {
                 }
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
-                addNotification('Не удалось загрузить данные');
+                addLocalNotification('Не удалось загрузить данные');
             }
         };
 
         if (isOpen) loadData();
-    }, [isOpen, addNotification, ymaps]);
+    }, [isOpen, ymaps, addLocalNotification]);
 
     // Обработчик выбора адреса в поиске
     const handleSelectSuggestion = useCallback(async (suggestion) => {
         setSearchQuery(suggestion.displayName);
-        setSuggestions([]);
+        setSuggestions([]); // Очищаем список адресов в подсказе
 
         // Сохраняем выбранные координаты
         setSelectedAddress({
@@ -103,7 +137,7 @@ const AddressModal = () => {
 
         // Обновляем координаты на карте (ТОЛЬКО МЕТКИ)
         if (mapRef.current) {
-            // mapRef.current.setCenter(suggestion.coordinates, 17);
+            mapRef.current.setCenter(suggestion.coordinates, 17);
 
             // Удаляем только метки, сохраняя полигоны
             mapRef.current.geoObjects.removeAll((geoObject) => {
@@ -145,9 +179,9 @@ const AddressModal = () => {
             setFormData(newFormData);
         } catch (error) {
             console.error('Ошибка геокодирования:', error);
-            addNotification('Не удалось определить детали адреса');
+            addLocalNotification('Не удалось определить детали адреса');
         }
-    }, [ymaps, addNotification, formData.isPrivateHome]);
+    }, [ymaps, addLocalNotification, formData.isPrivateHome]);
 
     // Эффект для инициализации карты (без полигонов)
     useEffect(() => {
@@ -184,7 +218,7 @@ const AddressModal = () => {
 
                     // Проверяем наличие результатов
                     if (!res.geoObjects || res.geoObjects.getLength() === 0) {
-                        addNotification('Адрес не найден');
+                        addLocalNotification('Адрес не найден');
                         return;
                     }
 
@@ -194,7 +228,7 @@ const AddressModal = () => {
                     // Дополнительная проверка компонентов адреса
                     const components = firstGeoObject.properties.get('metaDataProperty.GeocoderMetaData.Address.Components');
                     if (!components) {
-                        addNotification('Не удалось разобрать адрес');
+                        addLocalNotification('Не удалось разобрать адрес');
                         return;
                     }
 
@@ -210,10 +244,9 @@ const AddressModal = () => {
                         displayName: address,
                         coordinates: coordinates
                     });
-
                 } catch (error) {
                     console.error('Ошибка обработки клика:', error);
-                    addNotification('Ошибка определения адреса');
+                    addLocalNotification('Ошибка определения адреса');
                 }
             };
 
@@ -231,7 +264,7 @@ const AddressModal = () => {
                 }
             };
         });
-    }, [ymaps, isOpen, addNotification, handleSelectSuggestion, deliveryZones]);
+    }, [ymaps, isOpen, addLocalNotification, handleSelectSuggestion, deliveryZones]);
 
     // Эффект для отрисовки/обновления полигонов при изменении deliveryZones
     useEffect(() => {
@@ -278,20 +311,22 @@ const AddressModal = () => {
     // Закрываем модальное окно при клике на фон
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (modalRef.current && !modalRef.current.contains(event.target)) {
+            if (isOpen && modalRef.current && !modalRef.current.contains(event.target)) {
                 closeModal(); // Закрываем меню
             }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [closeModal]);
+    }, [closeModal, isOpen]);
 
     // Убираем скролл с перекрытой страницы
     useEffect(() => {
-        if (isOpen) document.body.classList.add('no-scroll');
-        if (closeModal) return () => document.body.classList.remove('no-scroll');
-    }, [isOpen, closeModal]);
+        if (isOpen) {
+            document.body.classList.add('no-scroll');
+            return () => document.body.classList.remove('no-scroll');
+        }
+    }, [isOpen]);
 
     // Закрываем модальное окно при нажатии на Escape
     useEffect(() => {
@@ -341,49 +376,47 @@ const AddressModal = () => {
     const validateDeliveryZone = async (coordinates) => {
         if (!ymaps) return false; // Если карта недоступна, значит, зону нельзя выбрать
 
-        // ymaps.ready(() => {
-            try {
-                // Проверяем все зоны
-                return deliveryZones.some(zone => {
-                    if (!Array.isArray(zone.coordinates) || zone.coordinates.length < 3) { // Проверка структуры данных
-                        console.error('Некорректные координаты зоны:', zone);
-                        return false;
-                    }
+        try {
+            // Проверяем все зоны
+            return deliveryZones.some(zone => {
+                if (!Array.isArray(zone.coordinates) || zone.coordinates.length < 3) { // Проверка структуры данных
+                    console.error('Некорректные координаты зоны:', zone);
+                    return false;
+                }
 
-                    // Создаем полигон
-                    const polygon = new ymaps.Polygon([zone.coordinates], {}, {
-                        fillOpacity: 0.001,
-                        strokeWidth: 0
-                    });
-
-                    if (!polygon.geometry) {
-                        console.error('Невозможно создать геометрию полигона');
-                        return false;
-                    }
-                    mapRef.current.geoObjects.add(polygon);
-
-                    // Явная проверка принадлежности точки
-                    const contains = polygon.geometry.contains(coordinates);
-                    console.log('Zone check:', zone.id, 'contains', coordinates, '->', contains);
-                    return contains;
+                // Создаем полигон
+                const polygon = new ymaps.Polygon([zone.coordinates], {}, {
+                    fillOpacity: 0.001,
+                    strokeWidth: 0
                 });
-            } catch (e) {
-                console.error('Ошибка проверки зоны:', e);
-                return false;
-            }
-        // });
+
+                if (!polygon.geometry) {
+                    console.error('Невозможно создать геометрию полигона');
+                    return false;
+                }
+                mapRef.current.geoObjects.add(polygon);
+
+                // Явная проверка принадлежности точки
+                const contains = polygon.geometry.contains(coordinates);
+                console.log('Zone check:', zone.id, 'contains', coordinates, '->', contains);
+                return contains;
+            });
+        } catch (e) {
+            console.error('Ошибка проверки зоны:', e);
+            return false;
+        }
     };
 
     // Сохранение адреса
     const handleSaveAddress = async () => {
         if (!selectedAddress?.coordinates) {
-            addNotification('Выберите адрес на карте');
+            addLocalNotification('Выберите адрес на карте');
             return;
         }
 
         const isValid = await validateDeliveryZone(selectedAddress.coordinates);
         if (!isValid) {
-            addNotification('Адрес находится вне зоны доставки');
+            addLocalNotification('Адрес находится вне зоны доставки');
             return;
         }
 
@@ -409,7 +442,7 @@ const AddressModal = () => {
 
         } catch (error) {
             console.error('Ошибка сохранения:', error);
-            addNotification('Не удалось сохранить адрес');
+            addLocalNotification('Не удалось сохранить адрес');
         } finally {
             setIsSaving(false);
         }
@@ -434,15 +467,22 @@ const AddressModal = () => {
     ===========================
     */
 
-    return ReactDOM.createPortal(
+    return isOpen && ReactDOM.createPortal(
         <div className={`address-modal-overlay ${isOpen ? 'active' : ''}`}>
             <div className="address-modal-container" ref={modalRef}>
+                <button
+                    onClick={() => closeModal()}
+                    className="address-modal-close-button"
+                    aria-label="Закрыть форму"
+                >
+                    <img src={crossIcon} alt="Cross" />
+                </button>
                 <div className="address-modal-sidebar">
                     {mode === 'list' ? (
                         <>
                             <button
                                 className="address-modal-add-btn"
-                                onClick={() => mode('create')}
+                                onClick={() => openModal('create')}
                             >
                                 + Новый адрес
                             </button>
@@ -460,7 +500,7 @@ const AddressModal = () => {
                                             {address.comment && ` (${address.comment})`}
                                         </p>
                                         <div className="address-modal-item-actions">
-                                            <button onClick={() => mode('edit')}>Изменить</button>
+                                            <button onClick={() => openModal('edit')}>Изменить</button>
                                             <button onClick={() => handleDelete(address.id)}>Удалить</button>
                                         </div>
                                     </div>
@@ -469,16 +509,25 @@ const AddressModal = () => {
                         </>
                     ) : (
                         <div className="address-modal-form">
+
                             <div>
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="Введите адрес..."
-                                />
+                                <div className="address-modal-title">{mode === "create" ? 'Новый адрес' : 'Изменить адрес'}</div>
+
+                                <div className="address-modal-input-group">
+                                    <label>Город, улица, дом</label>
+                                    <input
+                                        maxLength="100"
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        placeholder="Введите адрес..."
+                                        className="address-modal-input"
+                                        style={{ width: 'calc(100% - 33.6px)' }}
+                                    />
+                                </div>
 
                                 {suggestions.length > 0 && (
-                                    <div className="suggestions-list">
+                                    <div className="address-modal-suggestions-list">
                                         {suggestions.map((suggestion, index) => (
                                             <div
                                                 key={index}
@@ -492,39 +541,68 @@ const AddressModal = () => {
                                 )}
 
                                 <div className="address-modal-extra-fields">
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.isPrivateHome}
-                                            onChange={(e) => setFormData(prev => ({
-                                                ...prev,
-                                                isPrivateHome: e.target.checked
-                                            }))}
-                                        />
-                                        Частный дом
-                                    </label>
+                                    <div className="address-modal-checkbox-group">
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={formData.isPrivateHome}
+                                                onChange={(e) => setFormData(prev => ({
+                                                    ...prev,
+                                                    isPrivateHome: e.target.checked,
+                                                    entrance: '',
+                                                    floor: '',
+                                                    apartment: ''
+                                                }))}
+                                            />
+                                            Частный дом
+                                        </label>
+                                    </div>
 
-                                    {formData.isPrivateHome && (
+                                    {!formData.isPrivateHome && (
                                         <>
-                                            <input
-                                                placeholder="Подъезд"
-                                                value={formData.entrance}
-                                                onChange={(e) => handleExtraFieldChange('entrance', e.target.value)}
-                                            />
-                                            <input
-                                                placeholder="Этаж"
-                                                value={formData.entrance}
-                                                onChange={(e) => handleExtraFieldChange('floor', e.target.value)}
-                                            />
-                                            <input
-                                                placeholder="Квартира"
-                                                value={formData.entrance}
-                                                onChange={(e) => handleExtraFieldChange('apartment', e.target.value)}
-                                            />
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                                                <div className="address-modal-input-group">
+                                                    <label>Подъезд</label>
+                                                    <input
+                                                        maxLength="10"
+                                                        className="address-modal-input"
+                                                        placeholder=""
+                                                        value={formData.entrance}
+                                                        onChange={(e) => handleExtraFieldChange('entrance', e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="address-modal-input-group">
+                                                    <label>Этаж</label>
+                                                    <input
+                                                        maxLength="10"
+                                                        className="address-modal-input"
+                                                        placeholder=""
+                                                        value={formData.floor}
+                                                        onChange={(e) => handleExtraFieldChange('floor', e.target.value)}
+                                                    />
+                                                </div>
+
+                                                <div className="address-modal-input-group">
+                                                    <label>Квартира</label>
+                                                    <input
+                                                        maxLength="10"
+                                                        className="address-modal-input"
+                                                        placeholder=""
+                                                        value={formData.apartment}
+                                                        onChange={(e) => handleExtraFieldChange('apartment', e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+
                                         </>
                                     )}
 
-                                    <textarea placeholder="Комментарий" />
+                                    <div className="address-modal-input-group">
+                                        <label>Комментарий</label>
+                                        <textarea
+                                            placeholder=""
+                                            maxLength="300" />
+                                    </div>
                                 </div>
                             </div>
 
@@ -540,6 +618,18 @@ const AddressModal = () => {
                 </div>
 
                 <div id="address-modal-map" className="address-modal-map" />
+            </div>
+
+            {/* ЛОкальные уведомления */}
+            <div className="address-modal-notifications">
+                {localNotifications.map((notification) => (
+                    <div
+                        key={notification.id}
+                        className={`address-modal-notification ${notification.type}`}
+                    >
+                        {notification.message}
+                    </div>
+                ))}
             </div>
         </div>,
         document.body // Рендерим портал в body, чтобы избежать проблем со стилями

@@ -13,8 +13,11 @@ body.no-scroll {
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.5);
-    display: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     z-index: 10;
+    backdrop-filter: blur(1px);
 }
 
 /* Модальное окно запущено */
@@ -22,32 +25,58 @@ body.no-scroll {
     display: flex;
     justify-content: center;
     align-items: center;
+    /* Анимация появления */
+    animation: modalAppear 0.3s ease;
+    transform: translateY(0);
+    transition: transform 0.3s ease;
+}
+
+/* Анимация появления */
+@keyframes modalAppear {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 /* Модальное окно */
 .address-modal-container {
     background: white;
-    width: 90vw;
-    height: 80vh;
+    width: 90%;
+    max-width: 1200px;
     border-radius: 12px;
-    display: grid;
-    grid-template-columns: 350px 1fr;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+    display: flex;
+    min-height: 600px;
+    overflow: hidden;
+    transition: transform 0.3s ease;
 }
 
 /* Левая часть окна - поля и список */
 .address-modal-sidebar {
-    padding: 20px;
-    border-right: 1px solid #eee;
-    overflow-y: auto;
+    width: 400px;
+    background: #f8f9fa;
+    padding: 25px;
+    border-right: 1px solid #e9ecef;
+    /* overflow-y: auto; */
 }
 
 /* Правая часть окна - карта */
 .address-modal-map {
-    height: 100%;
-    border-radius: 0 12px 12px 0;
-    overflow: hidden;
+    flex-grow: 1;
+    height: 600px;
+    background: #f8f9fa;
+
+    /* height: 100%; */
+    /* border-radius: 0 12px 12px 0; */
+    /* overflow: hidden; */
     /* Добавлено для обрезки */
-    background: #f0f0f0;
+    /* background: #f0f0f0; */
     /* Фон на время загрузки */
 }
 
@@ -55,34 +84,55 @@ body.no-scroll {
 .address-modal-add-btn {
     width: 100%;
     padding: 12px;
-    margin-bottom: 20px;
     background: #20b92d;
     color: white;
     border: none;
     border-radius: 8px;
+    font-weight: 500;
     cursor: pointer;
+    transition: background 0.3s;
+    margin-bottom: 20px;
 }
 
-/* Элемент адреса */
+.address-modal-add-btn:hover {
+    background: #189924;
+}
+
+/* Элементы списка адресов */
 .address-modal-item {
     display: flex;
-    align-items: center;
-    padding: 12px;
-    border-bottom: 1px solid #eee;
+    gap: 12px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s;
+}
+
+.address-modal-item:hover {
+    transform: translateX(5px);
 }
 
 /* Данные адреса */
 .address-modal-item-info {
-    margin-left: 12px;
+    flex-grow: 1;
 }
 
-/* Кнопки в адресе */
+/* Кнопки в адресе списка */
 .address-modal-item-actions button {
-    margin-right: 8px;
-    padding: 4px 8px;
-    background: #f0f0f0;
-    border: none;
-    border-radius: 4px;
+    padding: 6px 12px;
+    margin-left: 8px;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.address-modal-item-actions button:hover {
+    background: #f8f9fa;
+    border-color: #ced4da;
 }
 
 /* Форма добавления и редактирования адреса */
@@ -94,47 +144,208 @@ body.no-scroll {
     height: 100%;
 }
 
-/* Контейнер выпадающего списка адресов поиска */
-.suggestions-list {
-    max-height: 200px;
-    overflow-y: auto;
-    margin-top: 8px;
-    border: 1px solid #eee;
-    border-radius: 8px;
+/* Заголовок */
+.address-modal-title {
+    font-size: 24px;
+    font-weight: 600;
+    font-style: italic;
+    margin-bottom: 1rem;
+    color: #2d3436;
+    text-align: center;
 }
 
-/* Адрес списка */
+/* Список предложений поиска */
+.address-modal-suggestions-list {
+    position: absolute;
+    width: calc(100% - 0px);
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    max-height: 200px;
+    max-width: 400px;
+    overflow-y: auto;
+}
+
+/* Адрес предложения поиска */
 .address-modal-suggestion-item {
-    padding: 12px;
+    padding: 12px 16px;
     cursor: pointer;
-    background: #f8f9fa;
-    border-radius: 4px;
     transition: background 0.2s;
+    font-size: 14px;
 }
 
 .address-modal-suggestion-item:hover {
-    background: #e9ecef;
+    background: #f8f9fa;
 }
 
 .address-modal-suggestion-item:not(:last-child) {
     border-bottom: 1px solid #eee;
 }
 
-/* Дополнительные поля адресе */
-.address-modal-extra-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 12px;
+/* Поля ввода */
+.address-modal-input {
+    /* width: 100%; */
+    padding: 12px 16px;
+    border: 1px solid #dfe6e9;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.3s;
+    margin-bottom: 10px;
 }
 
-/* Кнопка сохранить адрес */
+.address-modal-input:focus {
+    outline: none;
+    border-color: #74b9ff;
+    box-shadow: 0 0 0 2px rgba(116, 185, 255, 0.2);
+}
+
+/* Дополнительные поля адресе */
+.address-modal-extra-fields {
+    margin-top: 0px;
+    display: flex;
+    flex-direction: column;
+}
+
+.address-modal-extra-fields input,
+.address-modal-extra-fields textarea {
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.address-modal-extra-fields textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+/* Группа поля и названия */
+.address-modal-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Заголовок поля */
+.address-modal-input-group label {
+    font-size: 14px;
+    color: #636e72;
+    font-weight: 500;
+}
+
+/* Чек-бокс */
+.address-modal-checkbox-group {
+    /* margin: 1.0rem 0; */
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.address-modal-checkbox-group input {
+    width: 20px;
+    height: 20px;
+    accent-color: #74b9ff;
+}
+
+/* Заголовок чекбокса */
+.address-modal-checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    font-size: 14px;
+    color: #636e72;
+    font-weight: 500;
+}
+
+/* Кнопка сохранения */
 .address-modal-save-btn {
-    margin-top: 20px;
-    padding: 12px;
-    background: #007bff;
+    width: 100%;
+    padding: 14px;
+    background: #20b92d;
     color: white;
     border: none;
     border-radius: 8px;
+    font-weight: 500;
     cursor: pointer;
+    transition: background 0.3s;
+    margin-top: 20px;
+}
+
+.address-modal-save-btn:disabled {
+    background: #dfe6e9;
+    cursor: not-allowed;
+}
+
+.address-modal-save-btn:hover:not(:disabled) {
+    background: #189924;
+}
+
+/* Уведомления внутри модального окна */
+
+/* Контейнер */
+.address-modal-notifications {
+    position: fixed;
+    top: 1.5%;
+    bottom: 0px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1100;
+}
+
+/* Сообщение */
+.address-modal-notification {
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 14px 28px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    animation: modalNotificationSlide 0.3s ease-out;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    font-size: 14px;
+    backdrop-filter: blur(5px);
+}
+
+/* Анимация */
+@keyframes modalNotificationSlide {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Крестик закрыть форму */
+.address-modal-close-button {
+    position: absolute;
+    left: 90.5%;
+    top: 9%;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.3s;
+    z-index: 1000;
+    padding: 1px 8px;
+    opacity: 0.7;
+    border-radius: 10px;
+    background-color: white;
+}
+
+.address-modal-close-button img {
+    margin-bottom: 0.5px;
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    /* Пропорция формы */
+}
+
+.address-modal-close-button:hover {
+    transform: translateY(-2px);
+    opacity: 1;
 }

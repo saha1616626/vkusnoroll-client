@@ -89,7 +89,7 @@ const AddressesPage = () => {
                 <h1 className="addresses-page-title">Адреса доставки</h1>
                 <button
                     className="addresses-page-add-btn"
-                    onClick={() => openModal('manage')}
+                    onClick={() => openModal('create')}
                 >
                     + Добавить адрес
                 </button>
