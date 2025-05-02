@@ -87,30 +87,55 @@ const Header = () => {
     // Обновление отображения выбранного адреса доставки
     useEffect(() => {
         const handleAddressUpdate = () => {
-            const savedAddressId = localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser');
-            const loadAddress = async () => {
-                try {
-                    if (!savedAddressId) {
-                        setCurrentAddress('');
-                        return;
-                    }
+            const isAuthorized = !!localStorage.getItem('clientId'); // Проверка авторизации
 
-                    // Добавляем новый метод в API для получения адреса по ID
-                    const response = await api.getDeliveryAddressById(savedAddressId);
-                    const address = response?.data[0] || null;
+            if (isAuthorized) { // Авторизованный пользователь
+                const savedAddressId = localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser');
+                const loadAddress = async () => {
+                    try {
+                        if (!savedAddressId) { // Если адрес не обнаружен или хранилище с данным объектом удалено
+                            setCurrentAddress('');
+                            return;
+                        }
 
-                    if (address) {
-                        setCurrentAddress(`${address.city}, ${address.street} ${address.house}`);
-                    } else {
-                        localStorage.removeItem('SelectedDefaultAddressIdAuthorizedUser');
+                        // Добавляем новый метод в API для получения адреса по ID
+                        const response = await api.getDeliveryAddressById(savedAddressId);
+                        const address = response?.data[0] || null;
+
+                        if (address) {
+                            setCurrentAddress(`${address.city}, ${address.street} ${address.house}`);
+                        } else {
+                            localStorage.removeItem('SelectedDefaultAddressIdAuthorizedUser');
+                            setCurrentAddress('');
+                        }
+                    } catch (error) {
                         setCurrentAddress('');
                     }
-                } catch (error) {
+                };
+
+                loadAddress();
+            } else {  // Гость
+                const savedAddress = JSON.parse(
+                    localStorage.getItem('SelectedDefaultAddressUnAuthorizedUser') || 'null'
+                );
+
+                if (!savedAddress) {
+                    setCurrentAddress('');
+                    return;
+                }
+
+                if (savedAddress) {
+                    setCurrentAddress(
+                        savedAddress.displayName || 
+                        `${savedAddress.city}, ${savedAddress.street} ${savedAddress.house}`
+                    );
+                } else {
+                    localStorage.removeItem('SelectedDefaultAddressUnAuthorizedUser');
                     setCurrentAddress('');
                 }
-            };
+            }
 
-            if (localStorage.getItem('clientId')) loadAddress();
+
         };
 
         // Вызываем при первоначальной загрузке

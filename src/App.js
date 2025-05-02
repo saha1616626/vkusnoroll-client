@@ -59,13 +59,15 @@ const AppContent = () => {
       updateAuth(false); // Синхронизируем контекст
       loadCart(); // Обновляем состав корзины при выходе из учетной записи (автоматически при окончании жизни токена или ручной выход)
 
+      // Генерируем кастомное событие для обновления отображения адреса в шапке
+      window.dispatchEvent(new Event('address-updated'));
+
       // Редирект только если не на целевой странице
       if (location.pathname !== '/menu') {
         navigate('/menu', { replace: true });
       }
     }
   }, [navigate, updateAuth, loadCart, location.pathname, isAuthenticated]);
-
 
   // Запуск интервала
   useEffect(() => {

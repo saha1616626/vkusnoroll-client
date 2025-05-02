@@ -61,6 +61,9 @@ const AddressModal = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // Отображение модального окна для подтверждения удаления
     const [addressBeingDeletedId, setaAdressBeingDeletedId] = useState(null); // Идентификатор удаляемого адреса
 
+    // Проверка авторизации. Обновляем состояние константы при запуске модального окна, чтобы при входе и выходе данные корректно отображались
+    const isAuthorized = useMemo(() => !!localStorage.getItem('clientId'), [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps 
+
     /* 
     ===========================
      Настройка страницы
@@ -224,19 +227,33 @@ const AddressModal = () => {
 
             // Загружаем адреса ТОЛЬКО в режиме list
             if (mode === 'list') {
-                const addressesRes = await api.getDeliveryAddressesByIdClient(localStorage.getItem('clientId'));
-                setAddresses(addressesRes.data.sort((a, b) => b.id - a.id) || []);
+                if (isAuthorized) { // Если авторизованный пользователь
+                    const addressesRes = await api.getDeliveryAddressesByIdClient(localStorage.getItem('clientId'));
+                    setAddresses(addressesRes.data.sort((a, b) => b.id - a.id) || []);
 
-                // Устанавливаем выбранный адрес
-                if (addressesRes.data.length > 0) {
-                    const savedAddressId = localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser');
-                    const targetAddress = addressesRes.data.find(addr =>
-                        addr.id.toString() === savedAddressId?.toString()
-                    );
-                    setSelectedAddress(targetAddress || addressesRes.data[0]);
-                } else { // Если нет адресов, то обновляем шапку
-                    // Генерируем кастомное событие для обновления отображения адреса в шапке
-                    window.dispatchEvent(new Event('address-updated'));
+                    // Устанавливаем выбранный адрес
+                    if (addressesRes.data.length > 0) {
+                        const savedAddressId = localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser');
+                        const targetAddress = addressesRes.data.find(addr =>
+                            addr.id.toString() === savedAddressId?.toString()
+                        );
+                        setSelectedAddress(targetAddress || addressesRes.data[0]);
+                    } else { // Если нет адресов, то обновляем шапку
+                        // Генерируем кастомное событие для обновления отображения адреса в шапке
+                        window.dispatchEvent(new Event('address-updated'));
+                    }
+                } else { // Для гостей
+                    const guestAddresses = JSON.parse(localStorage.getItem('guestAddresses') || []);
+                    setAddresses(guestAddresses.sort((a, b) => b.id - a.id));
+
+                    // Устанавливаем выбранный адрес
+                    if (guestAddresses.length > 0) {
+                        const savedAddress = JSON.parse(localStorage.getItem('SelectedDefaultAddressUnAuthorizedUser'));
+                        setSelectedAddress(savedAddress || guestAddresses[0]);
+                    } else {  // Если нет адресов, то обновляем шапку
+                        // Генерируем кастомное событие для обновления отображения адреса в шапке
+                        window.dispatchEvent(new Event('address-updated'));
+                    }
                 }
             }
 
@@ -252,7 +269,7 @@ const AddressModal = () => {
             console.error('Ошибка загрузки:', error);
             addLocalNotification('Не удалось загрузить данные');
         }
-    }, [addLocalNotification, mode, ymaps]);
+    }, [addLocalNotification, mode, ymaps, isAuthorized]);
 
     // Загрузка адресов пользователя и зон доставки
     useEffect(() => {
@@ -278,15 +295,22 @@ const AddressModal = () => {
         const fullAddress = `${selectedAddress.city}, ${selectedAddress.street} ${selectedAddress.house}`;
         geocodeAddress(fullAddress);
 
-        const clientId = localStorage.getItem('clientId');
-        if (!!clientId) {
-            // Сохраняем в локальное хранилище выбранный адрес
-            localStorage.setItem('SelectedDefaultAddressIdAuthorizedUser', selectedAddress.id)
+        if (isAuthorized) { // Авторизованный пользователь
+            const clientId = localStorage.getItem('clientId');
+            if (!!clientId) {
+                // Сохраняем в локальное хранилище выбранный адрес
+                localStorage.setItem('SelectedDefaultAddressIdAuthorizedUser', selectedAddress.id)
+
+                // Генерируем кастомное событие для обновления отображения адреса в шапке
+                window.dispatchEvent(new Event('address-updated'));
+            }
+        } else {  // Гость
+            localStorage.setItem('SelectedDefaultAddressUnAuthorizedUser', JSON.stringify(selectedAddress));
 
             // Генерируем кастомное событие для обновления отображения адреса в шапке
             window.dispatchEvent(new Event('address-updated'));
         }
-    }, [selectedAddress, geocodeAddress, ymaps]);
+    }, [selectedAddress, geocodeAddress, ymaps, isAuthorized]);
 
     // Обработчик выбора адреса в поиске
     const handleSelectSuggestion = useCallback(async (suggestion) => {
@@ -577,6 +601,7 @@ const AddressModal = () => {
         }
 
         try {
+
             // Подготовка данных для отправки
             const dataToSend = {
                 accountId: localStorage.getItem('clientId'),
@@ -590,15 +615,45 @@ const AddressModal = () => {
                 comment: formData.comment?.trim() || null,
             };
 
-            // Вызов API
-            let response;
-            if (mode === 'create') {
-                response = await api.createDeliveryAddress(dataToSend);
-                setSelectedAddress(response.data);
-            } else if (mode === 'edit' && editAddress?.id) {
-                response = await api.updateDeliveryAddress(editAddress.id, dataToSend);
-            } else {
-                throw new Error('Ошибка режима сохранения');
+
+            if (isAuthorized) { // Авторизованный пользователь
+                // Вызов API
+                let response;
+                if (mode === 'create') {
+                    response = await api.createDeliveryAddress(dataToSend);
+                    setSelectedAddress(response.data);
+                } else if (mode === 'edit' && editAddress?.id) {
+                    response = await api.updateDeliveryAddress(editAddress.id, dataToSend);
+                } else {
+                    throw new Error('Ошибка режима сохранения');
+                }
+            } else { // Гость
+
+                // Подготовка данных
+                const newAddress = {
+                    accountId: null,
+                    id: Date.now(), // Генерируем временный ID (Необходимо для обновления)
+                    ...dataToSend,
+                    coordinates: editedAddress.coordinates,
+                    displayName: editedAddress.displayName
+                };
+
+                const guestAddresses = JSON.parse(localStorage.getItem('guestAddresses') || '[]');
+
+                // В режиме редактирования обновляем данные, а в режиме добавления вносим новый адрес
+                const updatedAddresses = mode === 'edit'
+                    ? guestAddresses.map(addr => addr.id === editAddress.id ? newAddress : addr)
+                    : [...guestAddresses, newAddress];
+
+                // Сохраняем адреса
+                localStorage.setItem('guestAddresses', JSON.stringify(updatedAddresses));
+
+                // Обновляем новый выбранный адрес
+                if (mode === 'create') {
+                    setSelectedAddress(newAddress);
+                    localStorage.setItem('SelectedDefaultAddressUnAuthorizedUser', JSON.stringify(newAddress));
+                }
+
             }
 
             setIsSaving(true);
@@ -632,7 +687,21 @@ const AddressModal = () => {
     const handleConfirmDelete = async () => {
         try {
             if (!addressBeingDeletedId) return;
-            await api.deleteDeliveryAddress(addressBeingDeletedId);
+
+            if (isAuthorized) { // Авторизованный пользователь
+                await api.deleteDeliveryAddress(addressBeingDeletedId);
+            } else { // Гость
+                const guestAddresses = JSON.parse(localStorage.getItem('guestAddresses') || '[]');
+                const updatedAddresses = guestAddresses.filter(addr => addr.id !== addressBeingDeletedId);
+                localStorage.setItem('guestAddresses', JSON.stringify(updatedAddresses));
+
+                // Если удаляемый адрес был выбранным - сбрасываем выбор
+                if (selectedAddress?.id === addressBeingDeletedId) {
+                    localStorage.removeItem('SelectedDefaultAddressUnAuthorizedUser');
+                    setSelectedAddress(null);
+                }
+            }
+
             await fetchAddresses(); // Обновление данных
             addLocalNotification('Адрес успешно удален');
         } catch (error) {

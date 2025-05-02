@@ -81,7 +81,10 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
             localStorage.setItem('authUserToken', response.data.token);
             localStorage.setItem('clientId', response.data.userId)
             onLoginSuccess(); // Вызов колбэка успешной авторизации
-            loadCart(); // Обновляем состав корзины при выходе из учетной записи
+            loadCart(); // Обновляем состав корзины при входе в учетную запись
+
+            // Генерируем кастомное событие для обновления отображения адреса в шапке
+            window.dispatchEvent(new Event('address-updated'));
         } catch (err) {
             setError('Неверный email или пароль');
         }

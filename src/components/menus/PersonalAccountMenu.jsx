@@ -80,6 +80,9 @@ const PersonalAccountMenu = () => {
             .forEach(key => localStorage.removeItem(key));
         updateAuth(false); // Передаем состояние о выходе
         navigate('/menu');
+
+        // Генерируем кастомное событие для обновления отображения адреса в шапке
+        window.dispatchEvent(new Event('address-updated'));
     };
 
     // Навигация
