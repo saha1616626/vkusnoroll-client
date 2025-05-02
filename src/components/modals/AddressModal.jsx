@@ -234,6 +234,9 @@ const AddressModal = () => {
                         addr.id.toString() === savedAddressId?.toString()
                     );
                     setSelectedAddress(targetAddress || addressesRes.data[0]);
+                } else { // Если нет адресов, то обновляем шапку
+                    // Генерируем кастомное событие для обновления отображения адреса в шапке
+                    window.dispatchEvent(new Event('address-updated'));
                 }
             }
 
@@ -279,6 +282,9 @@ const AddressModal = () => {
         if (!!clientId) {
             // Сохраняем в локальное хранилище выбранный адрес
             localStorage.setItem('SelectedDefaultAddressIdAuthorizedUser', selectedAddress.id)
+
+            // Генерируем кастомное событие для обновления отображения адреса в шапке
+            window.dispatchEvent(new Event('address-updated'));
         }
     }, [selectedAddress, geocodeAddress, ymaps]);
 
@@ -728,7 +734,7 @@ const AddressModal = () => {
                                                 {address.comment && (
                                                     <div className="address-modal-comment">
                                                         <span className="icon">📝</span>
-                                                        {address.comment}
+                                                        {address.comment?.slice(0, 150)}{address.comment?.length > 150 && '...'}
                                                     </div>
                                                 )}
                                             </div>
@@ -880,7 +886,8 @@ const AddressModal = () => {
                                             placeholder=""
                                             maxLength="300"
                                             value={formData.comment}
-                                            onChange={(e) => handleExtraFieldChange('comment', e.target.value)} />
+                                            onChange={(e) => handleExtraFieldChange('comment', e.target.value)}
+                                            style={{ padding: '10px' }} />
                                     </div>
                                 </div>
                             </div>

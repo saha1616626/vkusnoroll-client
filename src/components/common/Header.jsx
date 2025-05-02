@@ -84,23 +84,45 @@ const Header = () => {
         loadTime();
     }, []);
 
-    // Обновление выбранного адреса доставки
+    // Обновление отображения выбранного адреса доставки
     useEffect(() => {
-        const savedAddressId = localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser');
-        const loadAddress = async () => {
-            try {
-                const response = await api.getDeliveryAddressById(savedAddressId);
-                const address = response?.data[0] || null;
-                if (address) {
-                    setCurrentAddress(`${address.city}, ${address.street} ${address.house}`);
+        const handleAddressUpdate = () => {
+            const savedAddressId = localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser');
+            const loadAddress = async () => {
+                try {
+                    if (!savedAddressId) {
+                        setCurrentAddress('');
+                        return;
+                    }
+
+                    // Добавляем новый метод в API для получения адреса по ID
+                    const response = await api.getDeliveryAddressById(savedAddressId);
+                    const address = response?.data[0] || null;
+
+                    if (address) {
+                        setCurrentAddress(`${address.city}, ${address.street} ${address.house}`);
+                    } else {
+                        localStorage.removeItem('SelectedDefaultAddressIdAuthorizedUser');
+                        setCurrentAddress('');
+                    }
+                } catch (error) {
+                    setCurrentAddress('');
                 }
-            } catch (error) {
-                setCurrentAddress('');
-            }
+            };
+
+            if (localStorage.getItem('clientId')) loadAddress();
         };
 
-        if (localStorage.getItem('clientId')) loadAddress();
-    }, []); // Зависимость от состояния модального окна адресов
+        // Вызываем при первоначальной загрузке
+        handleAddressUpdate();
+
+        // Подписываемся на кастомное событие
+        window.addEventListener('address-updated', handleAddressUpdate);
+
+        return () => {
+            window.removeEventListener('address-updated', handleAddressUpdate);
+        };
+    }, []);
 
     /* 
     ===========================

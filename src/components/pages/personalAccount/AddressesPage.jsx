@@ -30,7 +30,7 @@ const AddressesPage = () => {
     const [selectedAddress, setSelectedAddress] = useState(null); // Выбранный адрес
     const [showMenuId, setShowMenuId] = useState(null); // Меню для удаления и редактирования
     const { addNotification } = useNotification(); // Отображение уведомлений
-    const { openModal } = useAddressModal(); // Состояние для модального окна "Адреса доставки"
+    const { openModal, closeModal } = useAddressModal(); // Состояние для модального окна "Адреса доставки"
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // Отображение модального окна для подтверждения удаления
     const [addressBeingDeletedId, setaAdressBeingDeletedId] = useState(null); // Идентификатор удаляемого адреса
 
@@ -52,6 +52,9 @@ const AddressesPage = () => {
                     addr.id.toString() === savedAddressId?.toString()
                 );
                 setSelectedAddress(targetAddress || addressesRes.data[0]);
+            } else { // Если нет адресов, то обновляем шапку.
+                // Генерируем кастомное событие для обновления отображения адреса в шапке
+                window.dispatchEvent(new Event('address-updated'));
             }
         } catch (error) {
             console.error('Ошибка загрузки адресов:', error);
@@ -68,7 +71,7 @@ const AddressesPage = () => {
     useEffect(() => {
         // Обновляем данные на странице
         fetchAddresses();
-    }, [location.key, fetchAddresses]); // При переходе на данную страницу даже с текущей страницы будет изменен location.key, соответственно, данные на странице обновятся
+    }, [location.key, fetchAddresses, closeModal]); // При переходе на данную страницу, закрытие модального окна, данные на странице обновятся
 
     // Закрываем меню для удаления и редактирования адреса
     useEffect(() => {
@@ -90,6 +93,9 @@ const AddressesPage = () => {
         if (!!clientId) {
             // Сохраняем в локальное хранилище выбранный адрес
             localStorage.setItem('SelectedDefaultAddressIdAuthorizedUser', selectedAddress.id)
+
+            // Генерируем кастомное событие для обновления отображения адреса в шапке
+            window.dispatchEvent(new Event('address-updated'));
         }
     }, [selectedAddress]);
 
@@ -108,7 +114,7 @@ const AddressesPage = () => {
     // Обработчик подтверждения удаления адреса в модальном окне
     const handleConfirmDelete = async () => {
         try {
-            if(!addressBeingDeletedId) return;
+            if (!addressBeingDeletedId) return;
             await api.deleteDeliveryAddress(addressBeingDeletedId);
             addNotification('Адрес успешно удален');
             await fetchAddresses(); // Обновление данных
@@ -204,7 +210,7 @@ const AddressesPage = () => {
                                     {address.comment && (
                                         <div className="addresses-page-comment">
                                             <span className="icon">📝</span>
-                                            {address.comment}
+                                            {address.comment?.slice(0, 150)}{address.comment?.length > 150 && '...'}
                                         </div>
                                     )}
                                 </div>
