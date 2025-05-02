@@ -10,12 +10,14 @@ import api from '../../utils/api';  // API сервера
 import { useNotification } from "../contexts/NotificationContext"; // Контекст Уведомления
 import { useAddressModal } from '../contexts/AddressModalContext';  // Контекст модального окна "Адреса доставки"
 import { useDebounce } from '../Hooks/useDebounce'; // Задержка поиска
+import ConfirmationModal from './../modals/ConfirmationModal';
 
 // Стили
 import "./../../styles/modals/addressModal.css";
 
 // Импорт иконок
 import crossIcon from './../../assets/icons/cross.png'; // Крестик
+import moreIcon from '../../assets/icons/moreVertical.png';
 
 const AddressModal = () => {
 
@@ -26,6 +28,7 @@ const AddressModal = () => {
     */
 
     const modalRef = useRef(null); // Ссылка на модальное окно "Адреса доставки"
+    const menuRef = useRef(null); // Ссылка на меню для добавления и редактирования адреса
     const navigate = useNavigate(); // Для управления маршрутом приложения
 
     const { isOpen, closeModal, mode, openModal, editAddress, previousMode } = useAddressModal(); // Контекст управляет состоянием отображения модального окна
@@ -54,6 +57,9 @@ const AddressModal = () => {
     }), []);
 
     const [isSaving, setIsSaving] = useState(false); // Статус сохранения адреса
+    const [showMenuId, setShowMenuId] = useState(null); // Меню для удаления и редактирования
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // Отображение модального окна для подтверждения удаления
+    const [addressBeingDeletedId, setaAdressBeingDeletedId] = useState(null); // Идентификатор удаляемого адреса
 
     /* 
     ===========================
@@ -192,51 +198,63 @@ const AddressModal = () => {
 
     }, [mode, editAddress, geocodeAddress]);
 
+    // Закрываем меню для удаления и редактирования адреса
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setShowMenuId(null); // Закрываем меню
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [showMenuId]);
+
     /* 
     ===========================
      Управление картой
     ===========================
     */
 
+    const fetchAddresses = useCallback(async () => {
+        try {
+            // Всегда загружаем зоны доставки
+            const zonesRes = await api.getDeliveryZones();
+            setDeliveryZones(zonesRes.data.zones || []);
+
+            // Загружаем адреса ТОЛЬКО в режиме list
+            if (mode === 'list') {
+                const addressesRes = await api.getDeliveryAddressesByIdClient(localStorage.getItem('clientId'));
+                setAddresses(addressesRes.data.sort((a, b) => b.id - a.id) || []);
+
+                // Устанавливаем выбранный адрес
+                if (addressesRes.data.length > 0) {
+                    const savedAddressId = localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser');
+                    const targetAddress = addressesRes.data.find(addr =>
+                        addr.id.toString() === savedAddressId?.toString()
+                    );
+                    setSelectedAddress(targetAddress || addressesRes.data[0]);
+                }
+            }
+
+            // Центрируем карту по зонам доставки
+            if (zonesRes.data.zones?.length > 0 && mapRef.current) {
+                const bounds = ymaps.util.bounds.fromPoints(
+                    zonesRes.data.zones.flatMap(zone => zone.coordinates)
+                );
+                mapRef.current.map.setBounds(bounds);
+            }
+
+        } catch (error) {
+            console.error('Ошибка загрузки:', error);
+            addLocalNotification('Не удалось загрузить данные');
+        }
+    }, [addLocalNotification, mode, ymaps]);
+
     // Загрузка адресов пользователя и зон доставки
     useEffect(() => {
-        const loadData = async () => {
-            try {
-                // Всегда загружаем зоны доставки
-                const zonesRes = await api.getDeliveryZones();
-                setDeliveryZones(zonesRes.data.zones || []);
-
-                // Загружаем адреса ТОЛЬКО в режиме list
-                if (mode === 'list') {
-                    const addressesRes = await api.getDeliveryAddressesByIdClient(localStorage.getItem('clientId'));
-                    setAddresses(addressesRes.data.sort((a, b) => b.id - a.id) || []);
-
-                    // Устанавливаем выбранный адрес
-                    if (addressesRes.data.length > 0) {
-                        const savedAddressId = localStorage.getItem('AddressIdAuthorizedUser');
-                        const targetAddress = addressesRes.data.find(addr =>
-                            addr.id.toString() === savedAddressId?.toString()
-                        );
-                        setSelectedAddress(targetAddress || addressesRes.data[0]);
-                    }
-                }
-
-                // Центрируем карту по зонам доставки
-                if (zonesRes.data.zones?.length > 0 && mapRef.current) {
-                    const bounds = ymaps.util.bounds.fromPoints(
-                        zonesRes.data.zones.flatMap(zone => zone.coordinates)
-                    );
-                    mapRef.current.map.setBounds(bounds);
-                }
-
-            } catch (error) {
-                console.error('Ошибка загрузки:', error);
-                addLocalNotification('Не удалось загрузить данные');
-            }
-        };
-
-        if (isOpen) loadData();
-    }, [isOpen, ymaps, addLocalNotification, mode]);
+        if (isOpen) fetchAddresses();
+    }, [fetchAddresses, isOpen]);
 
     // Сброс выбранного адреса при закрытии
     useEffect(() => {
@@ -260,7 +278,7 @@ const AddressModal = () => {
         const clientId = localStorage.getItem('clientId');
         if (!!clientId) {
             // Сохраняем в локальное хранилище выбранный адрес
-            localStorage.setItem('AddressIdAuthorizedUser', selectedAddress.id)
+            localStorage.setItem('SelectedDefaultAddressIdAuthorizedUser', selectedAddress.id)
         }
     }, [selectedAddress, geocodeAddress, ymaps]);
 
@@ -458,7 +476,12 @@ const AddressModal = () => {
     // Закрываем модальное окно при клике на фон
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (isOpen && modalRef.current && !modalRef.current.contains(event.target)) {
+            if (
+                isOpen &&
+                modalRef.current &&
+                !modalRef.current.contains(event.target) &&
+                !event.target.closest('.confirmation-modal-overlay') // Проверяем что клик не по окну подтверждения удаления
+            ) {
                 closeModal(); // Закрываем меню
             }
         };
@@ -565,6 +588,7 @@ const AddressModal = () => {
             let response;
             if (mode === 'create') {
                 response = await api.createDeliveryAddress(dataToSend);
+                setSelectedAddress(response.data);
             } else if (mode === 'edit' && editAddress?.id) {
                 response = await api.updateDeliveryAddress(editAddress.id, dataToSend);
             } else {
@@ -592,9 +616,26 @@ const AddressModal = () => {
         }
     };
 
-    // Удаление адреса
-    const handleDelete = (addressId) => {
+    // Обработчик вызова модального окна для подтверждения удаления времени
+    const handleDeleteInit = async (addressId) => {
+        setShowDeleteConfirm(true); // Запуск модального окна
+        setaAdressBeingDeletedId(addressId); // Передача id
+    }
 
+    // Обработчик подтверждения удаления адреса в модальном окне
+    const handleConfirmDelete = async () => {
+        try {
+            if (!addressBeingDeletedId) return;
+            await api.deleteDeliveryAddress(addressBeingDeletedId);
+            await fetchAddresses(); // Обновление данных
+            addLocalNotification('Адрес успешно удален');
+        } catch (error) {
+            addLocalNotification('Ошибка при удалении адреса');
+            console.error('Ошибка удаления:', error);
+            await fetchAddresses(); // Обновление данных в случае сбоя
+        } finally {
+            setShowDeleteConfirm(false); // После выполнения удаления закрываем модальное окно
+        }
     }
 
     // Обработчик изменений в полях
@@ -638,24 +679,102 @@ const AddressModal = () => {
                             ) : (
                                 <div style={{ height: '0' }}>
                                     {addresses.map(address => (
-                                        <div key={address.id} className="address-modal-item">
-                                            <input
-                                                type="radio"
-                                                checked={selectedAddress?.id === address.id}
-                                                onChange={() => setSelectedAddress(address)}
-                                            />
-                                            <div className="address-modal-item-info">
-                                                <p>
-                                                    {address.city}, {address.street} {address.house}
-                                                    {address.comment && ` (${address.comment})`}
-                                                </p>
-                                                <div className="address-modal-item-actions">
-                                                    <button onClick={() => openModal('edit', address, 'list')}>Изменить</button>
-                                                    <button onClick={() => handleDelete(address.id)}>Удалить</button>
+                                        <div key={address.id} className="address-modal-address-card"
+                                            onClick={() => setSelectedAddress(address)}>
+                                            <div className="address-modal-radio-wrapper">
+                                                <input
+                                                    type="radio"
+                                                    checked={selectedAddress?.id === address.id}
+                                                    onChange={() => setSelectedAddress(address)}
+                                                />
+                                            </div>
+
+                                            <div style={{ width: '100%', height: '100%' }}>
+                                                <div className="addresses-page-main-info" style={{ marginBottom: address.isPrivateHome ? '0rem' : '' }}>
+                                                    <p className="address-modal-city-street">
+                                                        {address.city}, {address.street} {address.house}
+                                                        {address.isPrivateHome && (
+                                                            <span className="address-modal-private-label">Частный дом</span>
+                                                        )}
+                                                    </p>
                                                 </div>
+
+                                                <div className="address-modal-details" style={{ marginBottom: address.comment === null ? '0rem' : '' }}>
+                                                    {address.apartment && (
+                                                        <div className="address-modal-detail-item">
+                                                            <span className="icon">🏢</span>
+                                                            Кв./офис: {address.apartment}
+                                                        </div>
+                                                    )}
+
+                                                    {(address.entrance || address.floor) && (
+                                                        <div className="address-modal-detail-group">
+                                                            {address.entrance && (
+                                                                <div className="address-modal-detail-item">
+                                                                    <span className="icon">🚪</span>
+                                                                    Подъезд: {address.entrance}
+                                                                </div>
+                                                            )}
+                                                            {address.floor && (
+                                                                <div className="address-modal-detail-item">
+                                                                    <span className="icon">🔼</span>
+                                                                    Этаж: {address.floor}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {address.comment && (
+                                                    <div className="address-modal-comment">
+                                                        <span className="icon">📝</span>
+                                                        {address.comment}
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="address-card-header">
+                                                <button
+                                                    className="address-modal-menu-btn"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();  // Останавливаем распространение события radio
+                                                        setShowMenuId(showMenuId === address.id ? null : address.id);
+                                                    }}
+                                                >
+                                                    <img src={moreIcon} alt="Меню" width={16} />
+                                                </button>
+
+                                                {showMenuId === address.id && (
+                                                    <div className="address-modal-menu" ref={menuRef}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Останавливаем распространение события radio
+                                                        }}>
+                                                        <button
+                                                            className="menu-item"
+                                                            onClick={() => { openModal('edit', address, 'list'); setShowMenuId(null) }}
+                                                        >
+                                                            Редактировать
+                                                        </button>
+                                                        <button
+                                                            className="menu-item delete"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation(); // Предотвращаем всплытие
+                                                                handleDeleteInit(address.id);
+                                                                setShowMenuId(null);
+                                                            }}
+                                                        >
+                                                            Удалить
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     ))}
+
+                                    <div style={{ visibility: 'hidden' }}>
+                                        Мнимый блок
+                                    </div>
+
                                 </div>
                             )}
 
@@ -803,6 +922,16 @@ const AddressModal = () => {
                     </div>
                 ))}
             </div>
+
+            {/* Модальное окно подтверждения удаления  */}
+            <ConfirmationModal
+                isOpen={showDeleteConfirm}
+                title={'Подтвердите удаление'}
+                message={'Вы уверены, что хотите удалить выбранный адрес?'}
+                onConfirm={handleConfirmDelete}
+                onCancel={() => { setShowDeleteConfirm(false); }}
+            />
+
         </div>,
         document.body // Рендерим портал в body, чтобы избежать проблем со стилями
     );

@@ -6,6 +6,7 @@ import { useLocation } from 'react-router-dom';
 import api from '../../../utils/api';  // API сервера
 import { useNotification } from "../../contexts/NotificationContext"; // Контекст Уведомления
 import { useAddressModal } from '../../contexts/AddressModalContext'; // Контекст модального окна "Адреса доставки"
+import ConfirmationModal from './../../modals/ConfirmationModal';
 
 // Импорт иконок
 import moreIcon from '../../../assets/icons/moreVertical.png';
@@ -22,7 +23,7 @@ const AddressesPage = () => {
     ===========================
     */
 
-    const modalRef = useRef(null); // Ссылка на меню для добавления и редактирования адреса
+    const menuRef = useRef(null); // Ссылка на меню для добавления и редактирования адреса
     const location = useLocation(); // Текущее местоположение (URL)
 
     const [addresses, setAddresses] = useState([]); // Список адресов
@@ -30,6 +31,8 @@ const AddressesPage = () => {
     const [showMenuId, setShowMenuId] = useState(null); // Меню для удаления и редактирования
     const { addNotification } = useNotification(); // Отображение уведомлений
     const { openModal } = useAddressModal(); // Состояние для модального окна "Адреса доставки"
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false); // Отображение модального окна для подтверждения удаления
+    const [addressBeingDeletedId, setaAdressBeingDeletedId] = useState(null); // Идентификатор удаляемого адреса
 
     /* 
     ===========================
@@ -44,7 +47,7 @@ const AddressesPage = () => {
 
             // Устанавливаем выбранный адрес
             if (addressesRes.data.length > 0) {
-                const savedAddressId = localStorage.getItem('AddressIdAuthorizedUser');
+                const savedAddressId = localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser');
                 const targetAddress = addressesRes.data.find(addr =>
                     addr.id.toString() === savedAddressId?.toString()
                 );
@@ -67,10 +70,10 @@ const AddressesPage = () => {
         fetchAddresses();
     }, [location.key, fetchAddresses]); // При переходе на данную страницу даже с текущей страницы будет изменен location.key, соответственно, данные на странице обновятся
 
-    // Закрываем меню для добавления и редактирования адреса
+    // Закрываем меню для удаления и редактирования адреса
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (modalRef.current && !modalRef.current.contains(event.target)) {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
                 setShowMenuId(null); // Закрываем меню
             }
         };
@@ -86,7 +89,7 @@ const AddressesPage = () => {
         const clientId = localStorage.getItem('clientId');
         if (!!clientId) {
             // Сохраняем в локальное хранилище выбранный адрес
-            localStorage.setItem('AddressIdAuthorizedUser', selectedAddress.id)
+            localStorage.setItem('SelectedDefaultAddressIdAuthorizedUser', selectedAddress.id)
         }
     }, [selectedAddress]);
 
@@ -96,15 +99,25 @@ const AddressesPage = () => {
     ===========================
     */
 
-    // Удаление адреса
-    const handleDelete = async (addressId) => {
+    // Обработчик вызова модального окна для подтверждения удаления времени
+    const handleDeleteInit = async (addressId) => {
+        setShowDeleteConfirm(true); // Запуск модального окна
+        setaAdressBeingDeletedId(addressId); // Передача id
+    }
+
+    // Обработчик подтверждения удаления адреса в модальном окне
+    const handleConfirmDelete = async () => {
         try {
-            await api.deleteDeliveryAddress(addressId);
+            if(!addressBeingDeletedId) return;
+            await api.deleteDeliveryAddress(addressBeingDeletedId);
+            addNotification('Адрес успешно удален');
             await fetchAddresses(); // Обновление данных
         } catch (error) {
             addNotification('Ошибка при удалении адреса');
             console.error('Ошибка удаления:', error);
             await fetchAddresses(); // Обновление данных в случае сбоя
+        } finally {
+            setShowDeleteConfirm(false); // После выполнения удаления закрываем модальное окно
         }
     }
 
@@ -140,13 +153,65 @@ const AddressesPage = () => {
                             className={`address-card ${selectedAddress.id === address.id ? 'selected' : ''}`}
                             onClick={() => setSelectedAddress(address)}
                         >
-                            <div className="address-card-header">
+
+                            {/* Радио кнопка */}
+                            <div className="address-radio-wrapper">
                                 <input
                                     type="radio"
                                     name="selectedAddress"
                                     checked={selectedAddress.id === address.id}
                                     onChange={() => setSelectedAddress(address)}
                                 />
+                            </div>
+
+                            {/* Адрес */}
+                            <div style={{ width: '100%', height: '100%', alignContent: 'center' }}>
+                                <div className="address-card-body">
+                                    <div className="addresses-page-main-info" style={{ marginBottom: address.isPrivateHome ? '0rem' : '' }}>
+                                        <p className="addresses-page-city-street">
+                                            {address.city}, {address.street}, д. {address.house}
+                                            {address.isPrivateHome && (
+                                                <span className="addresses-page-private-label">Частный дом</span>
+                                            )}
+                                        </p>
+                                    </div>
+
+                                    <div className="addresses-page-details">
+                                        {address.apartment && (
+                                            <div className="addresses-page-detail-item">
+                                                <span className="icon">🏢</span>
+                                                Кв./офис: {address.apartment}
+                                            </div>
+                                        )}
+                                        {(address.entrance || address.floor) && (
+                                            <div className="addresses-page-detail-group">
+                                                {address.entrance && (
+                                                    <div className="addresses-page-detail-item">
+                                                        <span className="icon">🚪</span>
+                                                        Подъезд: {address.entrance}
+                                                    </div>
+                                                )}
+                                                {address.floor && (
+                                                    <div className="addresses-page-detail-item">
+                                                        <span className="icon">🔼</span>
+                                                        Этаж: {address.floor}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {address.comment && (
+                                        <div className="addresses-page-comment">
+                                            <span className="icon">📝</span>
+                                            {address.comment}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Меню */}
+                            <div className="address-card-header">
                                 <button
                                     className="address-card-menu-btn"
                                     onClick={(e) => {
@@ -158,7 +223,7 @@ const AddressesPage = () => {
                                 </button>
 
                                 {showMenuId === address.id && (
-                                    <div className="address-card-menu" ref={modalRef}
+                                    <div className="address-card-menu" ref={menuRef}
                                         onClick={(e) => {
                                             e.stopPropagation(); // Останавливаем распространение события radio
                                         }}>
@@ -168,21 +233,24 @@ const AddressesPage = () => {
                                             Редактировать
                                         </button>
                                         <button className="menu-item delete"
-                                            onClick={() => handleDelete(address.id)}
+                                            onClick={() => handleDeleteInit(address.id)}
                                         >Удалить</button>
                                     </div>
                                 )}
-                            </div>
-
-                            <div className="address-card-body">
-                                <p>{address.city}, ул. {address.street}, д. {address.house}</p>
-                                {address.apartment && <p>Кв./офис: {address.apartment}</p>}
-                                {address.comment && <p>Комментарий: {address.comment}</p>}
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+
+            {/* Модальное окно подтверждения удаления  */}
+            <ConfirmationModal
+                isOpen={showDeleteConfirm}
+                title={'Подтвердите удаление'}
+                message={'Вы уверены, что хотите удалить выбранный адрес?'}
+                onConfirm={handleConfirmDelete}
+                onCancel={() => { setShowDeleteConfirm(false); }}
+            />
 
         </div>
     );

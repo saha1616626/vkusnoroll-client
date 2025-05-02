@@ -43,7 +43,8 @@
     margin-right: 13px;
     width: 21px;
     height: 21px;
-    object-fit: contain; /* Пропорция формы */
+    object-fit: contain;
+    /* Пропорция формы */
 }
 
 .addresses-page-add-btn:hover {
@@ -58,6 +59,8 @@
 
 /* Карточка адреса */
 .address-card {
+    display: flex;
+    justify-content: space-between;
     background: white;
     border: 1px solid #dfe6e9;
     border-radius: 12px;
@@ -69,6 +72,8 @@
 .address-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    /* Чтобы меню кнопок не перекрывалось при наведении на блок */
+    z-index: 1;
 }
 
 .address-card.selected {
@@ -76,19 +81,29 @@
     background: #f8fbff;
 }
 
+/*  Контейнер радио кнопки */
+.address-radio-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: right;
+    height: 100%;
+    width: auto;
+    min-height: 44px;
+    /* Минимальная высота для карточки */
+}
+
 /* Радиокнопка выбора */
-.address-card-header input[type="radio"] {
+.address-radio-wrapper input[type="radio"] {
     accent-color: #20b92d;
     width: 18px;
     height: 18px;
-    margin-right: 12px;
 }
 
 /* Меню адреса */
 .address-card-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 1rem;
 }
 
@@ -99,7 +114,7 @@
     padding: 6px 6px;
     cursor: pointer;
     border-radius: 8px;
-    margin: -6px
+    margin: -5px;
 }
 
 .address-card-menu-btn:hover {
@@ -109,7 +124,7 @@
 .address-card-menu-btn img {
     width: 16px;
     object-fit: cover;
-    margin-bottom: -3px;
+    margin-bottom: -2.5px;
 }
 
 /* Контейнер кнопок действий меню */
@@ -144,10 +159,23 @@
 }
 
 /* Тело карточки */
+.address-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 0 28px;
+}
+
 .address-card-body p {
     margin: 4px 0;
     color: #636e72;
     font-size: 14px;
+}
+
+/* Адаптация пустых блоков */
+.addresses-page-details:empty,
+.addresses-page-comment:empty {
+    display: none;
 }
 
 /* Сообщение о пустом списке */
@@ -157,4 +185,91 @@
     padding: 2rem;
     border: 2px dashed #dfe6e9;
     border-radius: 12px;
+}
+
+/* Основная информация об адресе */
+.addresses-page-main-info {
+    margin-bottom: 1rem;
+}
+
+.addresses-page-city-street {
+    font-size: 16px;
+    font-weight: 500;
+    color: #2d3436;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.addresses-page-private-label {
+    background: #ffeaa7;
+    color: #e17055;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-style: normal;
+}
+
+/* Детали адреса */
+.addresses-page-details {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 1rem;
+}
+
+.addresses-page-detail-group {
+    display: flex;
+    gap: 1.5rem;
+}
+
+.addresses-page-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #636e72;
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+.addresses-page-detail-item .icon {
+    opacity: 0.8;
+}
+
+/* Комментарий */
+.addresses-page-comment {
+    padding: 12px;
+    background: #f8fbff;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #636e72;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-left: 3px solid #74b9ff;
+}
+
+/* Оптимизация для коротких карточек */
+.address-card {
+    min-height: auto !important;
+    padding: 1.25rem 1.5rem;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .addresses-page {
+        margin: 2em 1.5em;
+    }
+
+    .address-card-menu {
+        right: 0.5rem;
+        top: 2.5rem;
+    }
+
+    .addresses-page-detail-group {
+        flex-direction: column;
+        gap: 8px;
+    }
 }

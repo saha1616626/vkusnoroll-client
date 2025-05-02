@@ -39,7 +39,7 @@ const Header = () => {
 
     const { updateAuth } = useAuth(); // Состояния из контекста авторизации
     const { totalItems, isCartOpen, toggleCart } = useCart(); // Состояние из контекста корзины
-    const { openModal } = useAddressModal(); // Состояние для модального окна "Адреса доставки"
+    const { openModal, isOpen } = useAddressModal(); // Состояние для модального окна "Адреса доставки"
 
     const [deliveryTime, setDeliveryTime] = useState({ time: null, isWorking: false, nextWorkDate: null, nextStartTime: null }); // Время работы ресторана
     const [currentAddress, setCurrentAddress] = useState(''); // Выбранный адрес пользователя
@@ -83,6 +83,24 @@ const Header = () => {
         };
         loadTime();
     }, []);
+
+    // Обновление выбранного адреса доставки
+    useEffect(() => {
+        const savedAddressId = localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser');
+        const loadAddress = async () => {
+            try {
+                const response = await api.getDeliveryAddressById(savedAddressId);
+                const address = response?.data[0] || null;
+                if (address) {
+                    setCurrentAddress(`${address.city}, ${address.street} ${address.house}`);
+                }
+            } catch (error) {
+                setCurrentAddress('');
+            }
+        };
+
+        if (localStorage.getItem('clientId')) loadAddress();
+    }, []); // Зависимость от состояния модального окна адресов
 
     /* 
     ===========================

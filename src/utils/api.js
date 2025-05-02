@@ -66,6 +66,7 @@ const apiMethods = {
     getCurrentDeliveryTime: () => api.get(`/deliveryWork/current`), // Получение актуального времени доставки
 
     // Адреса доставки
+    getDeliveryAddressById: (id) => api.get(`/deliveryAddresses/address/${id}`),
     getDeliveryAddressesByIdClient: (id) => api.get(`/deliveryAddresses/${id}`),
     createDeliveryAddress: (data) => api.post('/deliveryAddresses', data),
     updateDeliveryAddress: (addressId, data) => api.put(`/deliveryAddresses/${addressId}`, data),

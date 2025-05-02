@@ -88,48 +88,159 @@ body.no-scroll {
     font-weight: 500;
     cursor: pointer;
     transition: background 0.3s;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
+    
 }
 
 .address-modal-add-btn:hover {
     background: #189924;
 }
 
-/* Элементы списка адресов */
-.address-modal-item {
+/* Карточка из списка адресов */
+.address-modal-address-card {
+    display: flex;
+    justify-content: space-between;
+    background: white;
+    border: 1px solid #dfe6e9;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
     position: relative;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: white;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-bottom: 1rem;
+    /* min-height: 120px; */
 }
 
-.address-modal-item:hover {
-    transform: translateX(5px);
+.address-modal-address-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1;
 }
 
-/* Данные адреса */
-.address-modal-item-info {
-    flex-grow: 1;
+.address-modal-address-card.selected {
+    border-color: #74b9ff;
+    background: #f8fbff;
 }
 
-/* Кнопки в адресе списка */
-.address-modal-item-actions button {
-    padding: 6px 12px;
-    margin-left: 8px;
-    border: 1px solid #e9ecef;
+/*  Контейнер радио кнопки */
+.address-modal-radio-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: left;
+    min-width: 40px;
+}
+
+.address-modal-radio-wrapper input[type="radio"] {
+    accent-color: #68946b;
+    width: 18px;
+    height: 18px;
+}
+
+.addresses-page-main-info {
+    height: 100%;
+    margin-bottom: 1.5rem;
+}
+
+.address-modal-city-street {
+    font-size: 16px;
+    font-weight: 500;
+    color: #2d3436;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: wrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: 2rem;
+}
+
+/* Частный дом */
+.address-modal-private-label {
+    background: #ffeaa7;
+    color: #e17055;
+    font-size: 12px;
+    padding: 4px 8px;
     border-radius: 6px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s;
+    flex-shrink: 0;
 }
 
-.address-modal-item-actions button:hover {
+/* Детализация адреса */
+.address-modal-details {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 1rem;
+}
+
+.address-modal-detail-group {
+    display: grid;
+    gap: 12px;
+    margin-bottom: 1rem;
+}
+
+.address-modal-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: #636e72;
     background: #f8f9fa;
-    border-color: #ced4da;
+    padding: 8px 12px;
+    border-radius: 8px;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-right: 1rem;
+}
+
+/* Комментарий */
+.address-modal-comment {
+    padding: 12px;
+    background: #f8fbff;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #636e72;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-left: 3px solid #74b9ff;
+    
+    display: flex;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    white-space: wrap;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    margin-right: 1rem;
+}
+
+/* Меню адреса */
+
+.address-modal-menu {
+    position: absolute;
+    right: 1rem;
+    top: 2.5rem;
+    background: white;
+    border: 1px solid #dfe6e9;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    min-width: 140px;
+}
+
+.address-modal-menu-btn {
+    background: none;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    border-radius: 8px;
+    margin-left: auto;
+    margin: 0 -10px;
+}
+
+.address-modal-menu-btn:hover {
+    background: rgba(128, 128, 128, 0.1);
 }
 
 /* Форма добавления и редактирования адреса */
@@ -393,4 +504,20 @@ body.no-scroll {
     padding: 2rem;
     border: 2px dashed #dfe6e9;
     border-radius: 12px;
+}
+
+/* Адаптация списка */
+@media (max-width: 768px) {
+
+    /* Карточка адреса */
+    .address-modal-address-card {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 1rem;
+    }
+
+    /* Радио кнопка */
+    .address-modal-radio-wrapper {
+        justify-content: flex-start;
+    }
 }

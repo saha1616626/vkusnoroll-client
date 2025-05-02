@@ -136,16 +136,6 @@ const PersonalAccountMenu = () => {
                 Выйти
             </button>
 
-
-            {/* <NavigationConfirmModal
-                isOpen={showNavigationConfirmModal}
-                onConfirm={() => {
-                    pendingNavigation?.();
-                    setShowNavigationConfirmModal(false);
-                }}
-                onCancel={() => setShowNavigationConfirmModal(false)}
-            /> */}
-
             {/* Модальное окно выход из учетной записи */}
             <ConfirmationModal
                 isOpen={showExitConfirmModal}
