@@ -1,6 +1,7 @@
 // Модальное окно "Адреса доставки"
 
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ReactDOM from 'react-dom';
 
 // Импорт компонентов
@@ -14,7 +15,7 @@ import { useDebounce } from '../Hooks/useDebounce'; // Задержка поис
 import "./../../styles/modals/addressModal.css";
 
 // Импорт иконок
-import crossIcon from './../../assets/icons/cross.png'; // Крестик 
+import crossIcon from './../../assets/icons/cross.png'; // Крестик
 
 const AddressModal = () => {
 
@@ -25,22 +26,14 @@ const AddressModal = () => {
     */
 
     const modalRef = useRef(null); // Ссылка на модальное окно "Адреса доставки"
+    const navigate = useNavigate(); // Для управления маршрутом приложения
 
     const { isOpen, closeModal, mode, openModal, editAddress, previousMode } = useAddressModal(); // Контекст управляет состоянием отображения модального окна
     const [addresses, setAddresses] = useState([]); // Список адресов клиента
     const [editedAddress, setEditedAddress] = useState(null); // Редактируемый адрес
     const [selectedAddress, setSelectedAddress] = useState(null); // Выбранный адрес в списке
     const [deliveryZones, setDeliveryZones] = useState([]); // Зоны доставки из БД
-    const [formData, setFormData] = useState({ // Формат данных формы
-        city: '',
-        street: '',
-        house: '',
-        isPrivateHome: false,
-        entrance: '',
-        floor: '',
-        apartment: '',
-        comment: ''
-    });
+    const [formData, setFormData] = useState([]); // Поля формы
     const [suggestions, setSuggestions] = useState([]); // Выбор адреса в списке
     const [suggestionsShow, setSuggestionsShow] = useState(false); // Отображение подсказки при вводе
     const { addNotification } = useNotification(); // Отображение уведомлений глобально
@@ -209,15 +202,26 @@ const AddressModal = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const [addressesRes, zonesRes] = await Promise.all([
-                    api.getDeliveryAddressesByIdClient(localStorage.getItem('clientId')),
-                    api.getDeliveryZones()
-                ]);
-
-                setAddresses(addressesRes.data);
+                // Всегда загружаем зоны доставки
+                const zonesRes = await api.getDeliveryZones();
                 setDeliveryZones(zonesRes.data.zones || []);
 
-                // Центрируем карту по зонам после загрузки (если зоны есть)
+                // Загружаем адреса ТОЛЬКО в режиме list
+                if (mode === 'list') {
+                    const addressesRes = await api.getDeliveryAddressesByIdClient(localStorage.getItem('clientId'));
+                    setAddresses(addressesRes.data.sort((a, b) => b.id - a.id) || []);
+
+                    // Устанавливаем выбранный адрес
+                    if (addressesRes.data.length > 0) {
+                        const savedAddressId = localStorage.getItem('AddressIdAuthorizedUser');
+                        const targetAddress = addressesRes.data.find(addr =>
+                            addr.id.toString() === savedAddressId?.toString()
+                        );
+                        setSelectedAddress(targetAddress || addressesRes.data[0]);
+                    }
+                }
+
+                // Центрируем карту по зонам доставки
                 if (zonesRes.data.zones?.length > 0 && mapRef.current) {
                     const bounds = ymaps.util.bounds.fromPoints(
                         zonesRes.data.zones.flatMap(zone => zone.coordinates)
@@ -225,20 +229,6 @@ const AddressModal = () => {
                     mapRef.current.map.setBounds(bounds);
                 }
 
-                // Устанавливаем выбранный адрес из локального хранилища
-                if (addressesRes.data.length > 0 && mode === 'list') {
-                    const savedAddressId = localStorage.getItem('AddressIdAuthorizedUser');
-                    const targetAddress = addressesRes.data.find(addr =>
-                        addr.id.toString() === savedAddressId?.toString()
-                    );
-
-                    // Устанавливаем адрес из хранилища или первый из списка
-                    setSelectedAddress(targetAddress || addressesRes.data[0]);
-
-                    // При выходе из учетной записи AddressIdAuthorizedUser не нужно удалять, поскольку 
-                    // у другого авторизованного пользователя id адреса не совпадет с AddressIdAuthorizedUser 
-                    // и будет в любом случае выбран первый адрес.
-                }
             } catch (error) {
                 console.error('Ошибка загрузки:', error);
                 addLocalNotification('Не удалось загрузить данные');
@@ -324,7 +314,7 @@ const AddressModal = () => {
                 city: addressComponents.find(c => c.kind === 'locality')?.name || '',
                 street: addressComponents.find(c => c.kind === 'street')?.name || '',
                 house: addressComponents.find(c => c.kind === 'house')?.name || '',
-                isPrivateHome: formData.isPrivateHome,
+                isPrivateHome: false,
                 // Сброс дополнительных полей
                 entrance: '',
                 floor: '',
@@ -336,7 +326,7 @@ const AddressModal = () => {
             console.error('Ошибка геокодирования:', error);
             addLocalNotification('Не удалось определить детали адреса');
         }
-    }, [ymaps, addLocalNotification, formData.isPrivateHome]);
+    }, [ymaps, addLocalNotification]);
 
     // Эффект для инициализации карты (без полигонов)
     useEffect(() => {
@@ -421,7 +411,7 @@ const AddressModal = () => {
                 }
             };
         });
-    }, [ymaps, isReady, isOpen, addLocalNotification, handleSelectSuggestion, deliveryZones]);
+    }, [ymaps, isReady, isOpen, addLocalNotification, handleSelectSuggestion, deliveryZones, mode]);
 
     // Эффект для отрисовки/обновления полигонов при изменении deliveryZones
     useEffect(() => {
@@ -541,12 +531,52 @@ const AddressModal = () => {
             return;
         }
 
+        // Проверка обязательных полей: город, улица, дом
+        if (!formData.city?.trim() || !formData.street?.trim() || !formData.house?.trim()) {
+            addLocalNotification('Заполните город, улицу и дом');
+            return;
+        }
+
+        // Если isPrivateHome === false, проверяем дополнительные поля
+        if (!formData.isPrivateHome) {
+            const requiredFields = ['entrance', 'floor', 'apartment'];
+            const missingFields = requiredFields.filter(field => !formData[field]?.trim());
+            if (missingFields.length > 0) {
+                addLocalNotification('Заполните подъезд, этаж и квартиру');
+                return;
+            }
+        }
+
         try {
+            // Подготовка данных для отправки
+            const dataToSend = {
+                accountId: localStorage.getItem('clientId'),
+                city: formData.city.trim(),
+                street: formData.street.trim(),
+                house: formData.house.trim(),
+                isPrivateHome: formData.isPrivateHome,
+                entrance: formData.entrance?.trim() || null,
+                floor: formData.floor?.trim() || null,
+                apartment: formData.apartment?.trim() || null,
+                comment: formData.comment?.trim() || null,
+            };
+
+            // Вызов API
+            let response;
+            if (mode === 'create') {
+                response = await api.createDeliveryAddress(dataToSend);
+            } else if (mode === 'edit' && editAddress?.id) {
+                response = await api.updateDeliveryAddress(editAddress.id, dataToSend);
+            } else {
+                throw new Error('Ошибка режима сохранения');
+            }
+
             setIsSaving(true);
 
             if (previousMode === null) { // Если предыдущий режим работы модального окна "null", значит выходим из модального окна
-                addNotification('Адрес успешно сохранен', 'success');
+                addNotification(mode === 'create' ? 'Адрес успешно сохранен' : 'Адрес успешно обновлен', 'success');
                 closeModal();
+                navigate('/personal-account/addresses', { replace: true }); // Перезагрузка страницы с обновлением данных
             }
 
             if (previousMode === 'list') { // Если предыдущий режим работы модального окна "list", значит переходим в список
@@ -556,7 +586,7 @@ const AddressModal = () => {
 
         } catch (error) {
             console.error('Ошибка сохранения:', error);
-            addLocalNotification('Не удалось сохранить адрес');
+            addLocalNotification(error.response.data.error || 'Не удалось сохранить адрес');
         } finally {
             setIsSaving(false);
         }
@@ -600,28 +630,35 @@ const AddressModal = () => {
                                     openModal('create', null, 'list');
                                 }}
                             >
-                                + Новый адрес
+                                Новый адрес
                             </button>
 
-                            {addresses.map(address => (
-                                <div key={address.id} className="address-modal-item">
-                                    <input
-                                        type="radio"
-                                        checked={selectedAddress?.id === address.id}
-                                        onChange={() => setSelectedAddress(address)}
-                                    />
-                                    <div className="address-modal-item-info">
-                                        <p>
-                                            {address.city}, {address.street} {address.house}
-                                            {address.comment && ` (${address.comment})`}
-                                        </p>
-                                        <div className="address-modal-item-actions">
-                                            <button onClick={() => openModal('edit', address, 'list')}>Изменить</button>
-                                            <button onClick={() => handleDelete(address.id)}>Удалить</button>
+                            {addresses.length === 0 ? (
+                                <div className="address-modal-empty">Добавьте Ваш первый адрес</div>
+                            ) : (
+                                <div style={{ height: '0' }}>
+                                    {addresses.map(address => (
+                                        <div key={address.id} className="address-modal-item">
+                                            <input
+                                                type="radio"
+                                                checked={selectedAddress?.id === address.id}
+                                                onChange={() => setSelectedAddress(address)}
+                                            />
+                                            <div className="address-modal-item-info">
+                                                <p>
+                                                    {address.city}, {address.street} {address.house}
+                                                    {address.comment && ` (${address.comment})`}
+                                                </p>
+                                                <div className="address-modal-item-actions">
+                                                    <button onClick={() => openModal('edit', address, 'list')}>Изменить</button>
+                                                    <button onClick={() => handleDelete(address.id)}>Удалить</button>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
+                            )}
+
                         </>
                     ) : (
                         <div className="address-modal-form">
@@ -664,13 +701,16 @@ const AddressModal = () => {
                                             <input
                                                 type="checkbox"
                                                 checked={formData.isPrivateHome}
-                                                onChange={(e) => setFormData(prev => ({
-                                                    ...prev,
-                                                    isPrivateHome: e.target.checked,
-                                                    entrance: '',
-                                                    floor: '',
-                                                    apartment: ''
-                                                }))}
+                                                onChange={(e) => {
+                                                    e.stopPropagation(); // Предотвращает случайную активацию других обработчиков
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        isPrivateHome: e.target.checked,
+                                                        entrance: '',
+                                                        floor: '',
+                                                        apartment: ''
+                                                    }))
+                                                }}
                                             />
                                             Частный дом
                                         </label>

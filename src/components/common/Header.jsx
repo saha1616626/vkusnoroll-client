@@ -20,6 +20,7 @@ import './../../styles/blocks/header.css'; // Стили для шапки
 import userIcon from './../../assets/icons/user.png'; // Личный кабинет
 import shoppingCartIcon from './../../assets/icons/shoppingCart.png'; // Корзина 
 import clockIcon from './../../assets/icons/clock.png'; // Часы 
+import locationIcon from './../../assets/icons/location.png'; // Метка карты
 
 const Header = () => {
 
@@ -41,6 +42,7 @@ const Header = () => {
     const { openModal } = useAddressModal(); // Состояние для модального окна "Адреса доставки"
 
     const [deliveryTime, setDeliveryTime] = useState({ time: null, isWorking: false, nextWorkDate: null, nextStartTime: null }); // Время работы ресторана
+    const [currentAddress, setCurrentAddress] = useState(''); // Выбранный адрес пользователя
 
     /* 
     ===========================
@@ -179,10 +181,29 @@ const Header = () => {
                     ВкусноРолл
                 </div>
 
-                <div className="header-group-element">
+                <div style={{ display: 'flex', gap: '3rem' }}>
                     {/* Адрес доставки */}
-                    <button onClick={() => openModal('list')}>
-                        Адреса доставки
+                    <button
+                        className="header-address-button"
+                        onClick={() => openModal('list')}
+                        title={currentAddress || 'Выберите адрес доставки'}
+                    >
+                        <img
+                            src={locationIcon}
+                            aria-label="Адрес доставки"
+                            alt="Location"
+                            className="header-address-icon"
+                        />
+                        <div className="header-address-text">
+                            {currentAddress ? (
+                                <>
+                                    {currentAddress.split(',')[0]}
+                                    <span>{currentAddress.slice(currentAddress.indexOf(',') + 1).trim()}</span>
+                                </>
+                            ) : (
+                                'Выберите адрес'
+                            )}
+                        </div>
                     </button>
 
                     {/* Время работы доставки */}
@@ -218,6 +239,9 @@ const Header = () => {
                             )}
                         </div>
                     </div>
+                </div>
+
+                <div className="header-group-element">
 
                     <nav style={{ display: 'flex', gap: '30px', justifyContent: 'center', margin: '0', padding: '0' }}>
                         {['Контакты', 'Новости'].map((label, index) => {
@@ -233,29 +257,30 @@ const Header = () => {
                             );
                         })}
                     </nav>
-                </div>
 
-                <div className="header-icons">
-                    <img
-                        src={userIcon}
-                        aria-label="Личный кабинет"
-                        title="Личный кабинет"
-                        alt="User"
-                        onClick={handleLaunchingPersonalAccount}
-                        style={{ cursor: 'pointer' }}
-                    />
-                    <img
-                        src={shoppingCartIcon}
-                        alt="Settings"
-                        title="Корзина"
-                        onClick={toggleCart}
-                        style={{ cursor: 'pointer' }}
-                    />
-                    {totalItems > 0 && (
-                        <span className="header-cart-badge">
-                            {totalItems}
-                        </span>
-                    )}
+
+                    <div className="header-icons">
+                        <img
+                            src={userIcon}
+                            aria-label="Личный кабинет"
+                            title="Личный кабинет"
+                            alt="User"
+                            onClick={handleLaunchingPersonalAccount}
+                            style={{ cursor: 'pointer' }}
+                        />
+                        <img
+                            src={shoppingCartIcon}
+                            alt="Settings"
+                            title="Корзина"
+                            onClick={toggleCart}
+                            style={{ cursor: 'pointer' }}
+                        />
+                        {totalItems > 0 && (
+                            <span className="header-cart-badge">
+                                {totalItems}
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {/* Корзина */}

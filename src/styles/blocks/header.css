@@ -13,7 +13,7 @@
 /* Группировка элементов */
 .header-group-element {
     display: flex;
-    gap: 100px
+    gap: 8rem
 }
 
 /* Логотип */
@@ -168,4 +168,52 @@
 .header-delivery-time:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Кнопка адреса доставки */
+
+/* Кнопка адреса */
+.header-address-button {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 8px 24px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+    background: #2196F3;
+    color: white;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
+    border: none;
+    cursor: pointer;
+    max-width: 300px;
+    text-align: left;
+}
+
+.header-address-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    background: #1976D2;
+}
+
+/* Иконка */
+.header-address-icon {
+    width: 24px;
+    object-fit: cover;
+    filter: brightness(0) invert(1);
+}
+
+/* Контейнер текста */
+.header-address-text {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Текст */
+.header-address-text span {
+    font-size: 12px;
+    opacity: 0.9;
+    display: block;
 }

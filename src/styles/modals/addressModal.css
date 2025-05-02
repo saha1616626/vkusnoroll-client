@@ -63,7 +63,7 @@ body.no-scroll {
     background: #f8f9fa;
     padding: 25px;
     border-right: 1px solid #e9ecef;
-    /* overflow-y: auto; */
+    overflow-y: auto;
 }
 
 /* Правая часть окна - карта */
@@ -71,12 +71,9 @@ body.no-scroll {
     flex-grow: 1;
     height: 600px;
     background: #f8f9fa;
-
-    /* height: 100%; */
-    /* border-radius: 0 12px 12px 0; */
-    /* overflow: hidden; */
+    overflow: hidden;
     /* Добавлено для обрезки */
-    /* background: #f0f0f0; */
+    background: #f0f0f0;
     /* Фон на время загрузки */
 }
 
@@ -386,4 +383,14 @@ body.no-scroll {
 .address-modal-close-button:hover {
     transform: translateY(-2px);
     opacity: 1;
+}
+
+/* Сообщение о пустом списке */
+.address-modal-empty {
+    margin-top: 0.5rem;
+    text-align: center;
+    color: #636e72;
+    padding: 2rem;
+    border: 2px dashed #dfe6e9;
+    border-radius: 12px;
 }

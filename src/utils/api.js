@@ -66,7 +66,10 @@ const apiMethods = {
     getCurrentDeliveryTime: () => api.get(`/deliveryWork/current`), // Получение актуального времени доставки
 
     // Адреса доставки
-    getDeliveryAddressesByIdClient: (id) => api.get(`/deliveryAddresses/${id}`), 
+    getDeliveryAddressesByIdClient: (id) => api.get(`/deliveryAddresses/${id}`),
+    createDeliveryAddress: (data) => api.post('/deliveryAddresses', data),
+    updateDeliveryAddress: (addressId, data) => api.put(`/deliveryAddresses/${addressId}`, data),
+    deleteDeliveryAddress: (addressId) => api.delete(`/deliveryAddresses/${addressId}`),
 
     // Зоны доставки
     getDeliveryZones: () => api.get('/deliverySettings/delivery-zones'),
