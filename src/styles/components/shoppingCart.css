@@ -304,6 +304,47 @@ body.no-scroll {
     background: #219a52;
 }
 
+/*  Кнопка для оформ. заказа в неактивном состоянии  */
+.shopping-cart-checkout--disabled {
+    background: #bdc3c7 !important;
+    cursor: not-allowed !important;
+    opacity: 0.8;
+    position: relative;
+}
+
+.shopping-cart-checkout--disabled:hover {
+    background: #bdc3c7 !important;
+    transform: none !important;
+}
+
+.shopping-cart-checkout--disabled::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+/* Анимация для неактивной кнопки (плавное затухание) */
+@keyframes pulse-disabled {
+    0% {
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+
+    100% {
+        opacity: 0.8;
+    }
+}
+
+.shopping-cart-checkout--disabled {
+    animation: pulse-disabled 2s infinite;
+}
+
 /* Адаптивность для мобильных */
 @media (max-width: 480px) {
 

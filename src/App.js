@@ -25,7 +25,9 @@ import PersonalAccountLayout from './components/layouts/PersonalAccountLayout'; 
 import PersonalDataPage from './components/pages/personalAccount/PersonalDataPage'; // Личный кабиент. Личные данные
 import OrdersPage from './components/pages/personalAccount/OrdersPage'; // Личный кабиент. Заказы
 import AddressesPage from './components/pages/personalAccount/AddressesPage'; // Личный кабиент. Адреса
-import AddressModal from './components/modals/AddressModal';
+import AddressModal from './components/modals/AddressModal'; // Модальное окно  "Адреса доставки"
+import OrderPage from './components/pages/OrderPage'; // Страница оформления заказа
+
 
 function App() {
   return (
@@ -94,6 +96,8 @@ const AppContent = () => {
               <Route path="addresses" element={<AddressesPage />} />
             </Route>
           </Route>
+          {/* Страница оформления заказа */}
+          <Route path="/order" element={<OrderPage />} />
         </Route>
       </Routes>
       <AddressModal /> {/* Провайдер модального окна "Адреса доставки" */}

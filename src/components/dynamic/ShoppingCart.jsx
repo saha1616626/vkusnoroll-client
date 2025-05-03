@@ -2,6 +2,9 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useCart } from "../contexts/CartContext"; // Контекст корзины
+import { useNavigate } from 'react-router-dom';
+
+// Импорт компонентов
 
 // Импорт стилей
 import "./../../styles/components/shoppingCart.css";
@@ -18,6 +21,7 @@ const ShoppingCart = () => {
     */
 
     const modalRef = useRef(null); // Ссылка на корзину
+    const navigate = useNavigate(); // Для управления маршрутом приложения
 
     /* 
     ===========================
@@ -98,7 +102,16 @@ const ShoppingCart = () => {
         return "товаров";
     };
 
+    // Оформить заказ
+    const handlePlaceOrder = () => {
+
+        navigate('/menu/order', { replace: true }); // Перезагрузка страницы с обновлением данных
+    }
+
     if (!isCartOpen) return null; // Если корзина не открыта, то контент не рендерим
+
+    // Проверка наличия валидных товаров в корзине (не архивных)
+    const hasActiveItems = cartItems.some(item => !item.isArchived);
 
     return (
         <div className="shopping-cart-overlay">
@@ -154,7 +167,7 @@ const ShoppingCart = () => {
                                                         disabled={true}>-</button>
                                                     <span>{item.quantity}</span>
                                                     <button onClick={() => handleQuantityChange(item.id, 1)}
-                                                         disabled={true}>+</button>
+                                                        disabled={true}>+</button>
                                                 </div>
                                                 <button
                                                     className="shopping-cart-item-remove"
@@ -175,7 +188,15 @@ const ShoppingCart = () => {
                     <div className="shopping-cart-total">
                         {itemsCount} {getCorrectWord(itemsCount)} на сумму {total}₽
                     </div>
-                    <button className="shopping-cart-checkout">Оформить заказ</button>
+                    <button
+                        className={`shopping-cart-checkout ${!hasActiveItems ? 'shopping-cart-checkout--disabled' : ''}`}
+                        onClick={hasActiveItems ? handlePlaceOrder : undefined}
+                        disabled={!hasActiveItems}
+                        title={!hasActiveItems ? "Нет доступных товаров для заказа" : undefined}
+                    >
+                        {hasActiveItems ? "Оформить заказ" : "Нет доступных товаров"}
+                    </button>
+
                 </div>
             </div>
         </div>
