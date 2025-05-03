@@ -107,40 +107,68 @@ const ShoppingCart = () => {
                 <h2 className="shopping-cart-title">Корзина</h2>
 
                 <div className="shopping-cart-items">
-                    {cartItems.map(item => (
-                        <div key={item.id} className="shopping-cart-item">
-                            <div className="shopping-cart-item-image-container">
-                                <img src={item.image} alt={item.name} className="shopping-cart-item-image" />
-                            </div>
-                            <div className="shopping-cart-item-info">
-                                <h3>{item.name}</h3>
-                                <p className="shopping-cart-item-description">
-                                    {item.description?.slice(0, 50)}{item.description?.length > 50 && '...'}
-                                </p>
-                                <div className="shopping-cart-item-meta">
-                                    <span>{item.weight ? `${item.weight} г` : item.volume ? `${item.volume} л` : ''}</span>
-                                    <span>{item.price} ₽</span>
+                    {[...cartItems]
+                        .sort((a, b) => (b.isArchived - a.isArchived)) // Сортируем архивные вверх
+                        .map(item => (
+                            <div
+                                key={item.id}
+                                className={`shopping-cart-item ${item.isArchived ? 'shopping-cart-item-archived' : ''}`}
+                            >
+
+                                {/* Бейдж "Недоступно" */}
+                                {item.isArchived && (
+                                    <div className="shopping-cart-item-archived-badge">Недоступно</div>
+                                )}
+
+                                <div className="shopping-cart-item-image-container">
+                                    <img src={item.image} alt={item.name} className="shopping-cart-item-image" />
                                 </div>
-                                <div className="shopping-cart-item-controls">
-                                    <div className="shopping-cart-item-quantity">
-                                        <button onClick={() => handleQuantityChange(item.id, -1)}>-</button>
-                                        <span>{item.quantity}</span>
-                                        <button onClick={() => handleQuantityChange(item.id, 1)}>+</button>
+                                <div className="shopping-cart-item-info">
+                                    <h3>{item.name}</h3>
+                                    <p className="shopping-cart-item-description">
+                                        {item.description?.slice(0, 50)}{item.description?.length > 50 && '...'}
+                                    </p>
+                                    <div className="shopping-cart-item-meta">
+                                        <span>{item.weight ? `${item.weight} г` : item.volume ? `${item.volume} л` : ''}</span>
+                                        <span>{item.price} ₽</span>
                                     </div>
-                                    <button
-                                        className="shopping-cart-item-remove"
-                                        onClick={() => handleRemove(item.id)}
-                                    >
-                                        <img
-                                            src={deleteIcon}
-                                            alt="delete"
-                                            style={{ cursor: 'pointer' }}
-                                        />
-                                    </button>
+                                    <div className="shopping-cart-item-controls">
+                                        {!item.isArchived ? (
+                                            <>
+                                                <div className="shopping-cart-item-quantity">
+                                                    <button onClick={() => handleQuantityChange(item.id, -1)}>-</button>
+                                                    <span>{item.quantity}</span>
+                                                    <button onClick={() => handleQuantityChange(item.id, 1)}>+</button>
+                                                </div>
+                                                <button
+                                                    className="shopping-cart-item-remove"
+                                                    onClick={() => handleRemove(item.id)}
+                                                >
+                                                    <img src={deleteIcon} alt="delete" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="shopping-cart-item-quantity">
+                                                    <button onClick={() => handleQuantityChange(item.id, -1)}
+                                                        disabled={true}>-</button>
+                                                    <span>{item.quantity}</span>
+                                                    <button onClick={() => handleQuantityChange(item.id, 1)}
+                                                         disabled={true}>+</button>
+                                                </div>
+                                                <button
+                                                    className="shopping-cart-item-remove"
+                                                    onClick={() => handleRemove(item.id)}
+                                                    style={{ marginLeft: 'auto' }}
+                                                >
+                                                    <img src={deleteIcon} alt="delete" />
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
                 </div>
 
                 <div className="shopping-cart-footer">

@@ -61,6 +61,54 @@ body.no-scroll {
     margin-bottom: 1rem;
 }
 
+/* Стили для архивных товаров */
+
+.shopping-cart-item-archived {
+    position: relative;
+    opacity: 0.7;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+}
+
+.shopping-cart-item-archived::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: #e74c3c;
+    transform: translateY(-50%);
+    opacity: 0.5;
+}
+
+
+
+/* Бейдж "Недоступно" */
+.shopping-cart-item-archived-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: #e74c3c;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    z-index: 1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Отключаем hover-эффекты для архивных */
+.shopping-cart-item-archived .shopping-cart-item-quantity button:hover,
+.shopping-cart-item-archived .shopping-cart-item-remove:hover {
+    opacity: 1;
+}
+
+/* Изменяем курсор для кнопок количества */
+.shopping-cart-item-archived .shopping-cart-item-quantity button:hover {
+    cursor: not-allowed;
+}
+
 /* Кастомизация скролла */
 .shopping-cart-items::-webkit-scrollbar {
     width: 6px;
@@ -109,7 +157,7 @@ body.no-scroll {
     display: flex;
     gap: 12px;
     margin-bottom: 8px;
-  }
+}
 
 /* Вес, объем и цена */
 .shopping-cart-item-meta span {
