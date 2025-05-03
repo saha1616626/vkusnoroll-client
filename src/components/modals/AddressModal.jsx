@@ -17,7 +17,7 @@ import "./../../styles/modals/addressModal.css";
 
 // Импорт иконок
 import crossIcon from './../../assets/icons/cross.png'; // Крестик
-import moreIcon from '../../assets/icons/moreVertical.png';
+import moreIcon from '../../assets/icons/moreVertical.png'; // Точки вертикальные
 
 const AddressModal = () => {
 

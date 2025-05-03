@@ -1,12 +1,16 @@
 // Страница оформления заказа
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IMaskInput } from 'react-imask'; // Создание маски на номер телефона
+import { Link, useNavigate } from 'react-router-dom';
 
 // Импорт компонентов
 import { useCart } from '../contexts/CartContext';
+import { useAddressModal } from "../contexts/AddressModalContext"; // Контекст модального окна "Адреса доставки"
+import api from '../../utils/api'; // API сервера
 
 // Импорт иконок
+import moreIcon from '../../assets/icons/moreVertical.png'; // Точки вертикальные
 
 // Импорт стилей
 import './../../styles/pages/orderPage.css'; // Стили "Оформить заказ"
@@ -19,7 +23,8 @@ const OrderPage = () => {
     ===========================
     */
 
-    const { cartItems } = useCart();
+    const { cartItems } = useCart();  // Состояние корзины
+    const { openModal } = useAddressModal(); // Состояние для модального окна "Адреса доставки"
 
     /* 
     ===========================
@@ -31,6 +36,63 @@ const OrderPage = () => {
         name: null,
         numberPhone: null
     });
+    const [paymentMethod, setPaymentMethod] = useState(''); // Тип оплаты
+    const [changeAmount, setChangeAmount] = useState(''); // Подготовить сдачу с суммы
+    const [deliveryDate, setDeliveryDate] = useState(''); // Дата доставки
+    const [deliveryTime, setDeliveryTime] = useState(''); // Время доставки
+    const [selectedAddress, setSelectedAddress] = useState(null); // Адрес доставки по умолчанию
+
+    // Тестовые временные интервалы
+    const timeSlots = [
+        '10:00 — 11:00',
+        '11:00 — 12:00',
+        '12:00 — 13:00',
+        '13:00 — 14:00',
+        '14:00 — 15:00'
+    ];
+
+    /* 
+    ===========================
+     Эффекты
+    ===========================
+    */
+
+    // Загрузка адреса при монтировании
+    useEffect(() => {
+        const loadAddress = async () => {
+            const isAuthorized = !!localStorage.getItem('clientId'); // Статус авторизации
+
+            if (isAuthorized) { // Авторизованный пользователь
+                const addressId = localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser'); // Получаем Id адреса
+                if (addressId) {
+                    try {
+                        const response = await api.getDeliveryAddressById(addressId); // Получаем адрес по Id
+                        setSelectedAddress(response.data[0]);
+                    } catch (error) {
+                        console.error('Ошибка загрузки адреса:', error);
+                    }
+                }
+            } else { // Гость
+                const guestAddress = JSON.parse(
+                    localStorage.getItem('SelectedDefaultAddressUnAuthorizedUser') || 'null' // Получаем полный объект адреса
+                );
+                setSelectedAddress(guestAddress);
+            }
+        };
+
+        loadAddress();
+        // Подписываемся на кастомное событие для получения изменений в адресе
+        window.addEventListener('address-updated', loadAddress);
+        return () => window.removeEventListener('address-updated', loadAddress);
+    }, []);
+
+    /* 
+    ===========================
+     Функции
+    ===========================
+    */
+
+    const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0) + 120; // Сумма заказа (хардкод)
 
     /* 
     ===========================
@@ -49,6 +111,15 @@ const OrderPage = () => {
         }
     };
 
+    // Обработчик изменения адреса через модальное окно
+    const handleAddressUpdate = () => {
+        const isAuthorized = !!localStorage.getItem('clientId');
+        const address = isAuthorized
+            ? localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser')
+            : JSON.parse(localStorage.getItem('SelectedDefaultAddressUnAuthorizedUser') || 'null');
+        setSelectedAddress(address);
+    };
+
     /* 
     ===========================
      Рендер
@@ -57,41 +128,162 @@ const OrderPage = () => {
 
     return (
         <div className="order-page-container">
-            <button to="/" className="order-page-back-button">
-                ← Вернуться
-            </button>
+            <Link to="/menu" className="order-page-back-button">
+                <span className="order-page-back-arrow">←</span> Вернуться в меню
+            </Link>
 
             <h1 className="order-page-title">Оформление заказа</h1>
 
             <div className="order-page-content">
                 {/* Основная форма */}
                 <div className="order-page-main-section">
+                    {/* Контактная информация */}
                     <section className="order-page-section">
                         <h2 className="order-page-subtitle">Контактная информация</h2>
                         <div className="order-page-form-group">
-                            <input type="text" placeholder="Имя*" className="order-page-input" />
-                            <IMaskInput
-                                mask="+7(000)000-00-00"
-                                value={formData.numberPhone}
-                                onAccept={handlePhoneChange}
-                                className="order-page-input"
-                                placeholder="+7(___) ___-__-__"
-                            />
+                            <div className="order-page-input-group">
+                                <label className="order-page-label">Имя</label>
+                                <input
+                                    type="text"
+                                    placeholder=""
+                                    maxLength={50}
+                                    className="order-page-input"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="order-page-input-group">
+                                <label className="order-page-label">Телефон</label>
+                                <IMaskInput
+                                    mask="+7(000)000-00-00"
+                                    value={formData.numberPhone}
+                                    onAccept={(value) => setFormData({ ...formData, numberPhone: value })}
+                                    className="order-page-input"
+                                    placeholder="+7(___) ___-__-__"
+                                />
+                            </div>
                         </div>
                     </section>
 
+                    {/* Доставка */}
+                    <section className="order-page-section">
+                        <h2 className="order-page-subtitle">Доставка</h2>
+
+                        {/* Блок адреса */}
+                        <div className="order-page-input-group" style={{ marginBottom: '1.5rem' }}>
+                            <label className="order-page-label">Адрес доставки</label>
+                            {selectedAddress ? (
+                                <div className="order-address-card">
+                                    <div className="order-address-content">
+                                        <p className="order-address-main">
+                                            {selectedAddress.city}, {selectedAddress.street} {selectedAddress.house}
+                                            {selectedAddress.isPrivateHome && (
+                                                <span className="order-address-private">Частный дом</span>
+                                            )}
+                                        </p>
+                                        {(selectedAddress.apartment && !selectedAddress.isPrivateHome) && (
+                                            <p className="order-address-details">
+                                                <div>Подъезд: {selectedAddress.entrance}</div>
+                                                <div>Этаж: {selectedAddress.floor}</div>
+                                                <div>Кв./офис: {selectedAddress.apartment}</div>
+                                            </p>
+                                        )}
+                                    </div>
+                                    <button
+                                        className="order-address-more"
+                                        onClick={() => {
+                                            window.addEventListener('address-updated', handleAddressUpdate);
+                                            openModal('list');
+                                        }}>
+                                        <img src={moreIcon} alt="Изменить" width={16} />
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    className="order-page-add-address"
+                                    onClick={() => openModal('list')}>
+                                    + Добавить адрес доставки
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Блок даты и времени */}
+                        <div className="order-delivery-time-group">
+                            <div className="order-page-input-group">
+                                <label className="order-page-label">Дата доставки</label>
+                                <input
+                                    type="date"
+                                    className="order-page-input"
+                                    value={deliveryDate}
+                                    onChange={(e) => setDeliveryDate(e.target.value)}
+                                    min={new Date().toISOString().split('T')[0]}
+                                    // style={{ width: 'calc(100% - 27.2px)' }}
+                                />
+                            </div>
+
+                            <div className="order-page-input-group">
+                                <label className="order-page-label">Время доставки</label>
+                                <select
+                                    className="order-page-input"
+                                    value={deliveryTime}
+                                    onChange={(e) => setDeliveryTime(e.target.value)}>
+                                    <option value="">Выберите время</option>
+                                    {timeSlots.map((time, index) => (
+                                        <option key={index} value={time}>{time}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    {/* Способ оплаты */}
                     <section className="order-page-section">
                         <h2 className="order-page-subtitle">Способ оплаты</h2>
                         <div className="order-page-payment-methods">
                             {['Наличные', 'Картой при получении', 'Онлайн'].map(method => (
-                                <label key={method} className="order-page-payment-label">
-                                    <input type="radio" name="payment" className="order-page-radio" />
-                                    {method}
-                                </label>
+                                <div key={method} className="order-payment-method-container">
+                                    <label
+                                        className="order-page-payment-label"
+                                        onClick={() => setPaymentMethod(method)}
+                                    >
+                                        <div className="order-payment-radio-group">
+                                            <input
+                                                type="radio"
+                                                name="payment"
+                                                className="order-page-radio"
+                                                checked={paymentMethod === method}
+                                            />
+                                            <span className="order-page-payment-text">{method}</span>
+                                        </div>
+                                    </label>
+
+                                    {method === 'Наличные' && paymentMethod === 'Наличные' && (
+                                        <div className="order-page-change-field">
+                                            <label className="order-page-label">Подготовить сдачу с</label>
+                                            <div className="order-page-currency-input">
+                                                <input
+                                                    type="number"
+                                                    placeholder="5000"
+                                                    value={changeAmount}
+                                                    onChange={(e) => setChangeAmount(e.target.value)}
+                                                    min={total}
+                                                />
+                                                <span className="order-page-currency">₽</span>
+                                            </div>
+                                            {changeAmount && changeAmount < total && (
+                                                <p className="order-page-error">
+                                                    Сумма должна быть не меньше {total}₽
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             ))}
                         </div>
                     </section>
 
+                    {/* Комментарий */}
                     <section className="order-page-section">
                         <h2 className="order-page-subtitle">Комментарий</h2>
                         <textarea
@@ -103,6 +295,7 @@ const OrderPage = () => {
 
                 {/* Боковая панель с деталями */}
                 <div className="order-page-sidebar">
+                    {/* Детали заказа */}
                     <section className="order-page-section">
                         <h2 className="order-page-subtitle">Детали заказа</h2>
                         <div className="order-page-items-list">
