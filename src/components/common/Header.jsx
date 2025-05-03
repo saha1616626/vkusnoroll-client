@@ -57,7 +57,8 @@ const Header = () => {
             location.pathname !== '/menu' &&
             !location.pathname.startsWith('/contacts') &&
             !location.pathname.startsWith('/news') &&
-            !location.pathname.startsWith('/personal-account')
+            !location.pathname.startsWith('/personal-account') &&
+            !location.pathname.startsWith('/order')
         ) {
             navigate('/menu'); // Перенаправляем на маршрут по умолчанию
         }

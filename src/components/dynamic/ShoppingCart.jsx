@@ -104,8 +104,8 @@ const ShoppingCart = () => {
 
     // Оформить заказ
     const handlePlaceOrder = () => {
-
-        navigate('/menu/order', { replace: true }); // Перезагрузка страницы с обновлением данных
+        toggleCart(); // Закрываем корзину
+        navigate('/order'); // Переход на страницу для оформления заказа
     }
 
     if (!isCartOpen) return null; // Если корзина не открыта, то контент не рендерим
