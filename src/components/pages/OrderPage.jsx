@@ -9,9 +9,11 @@ import { useCart } from '../contexts/CartContext'; // Контекс корзи�
 import { useAddressModal } from "../contexts/AddressModalContext"; // Контекст модального окна "Адреса доставки"
 import api from '../../utils/api'; // API сервера
 import { useYmaps } from './../Hooks/useYmaps'; // Кастомный хук для использования Яндекс карты
+import DeliveryTimeModal from '../modals/DeliveryTimeModal'; // Модальное окно выбора даты и времени доставки
 
 // Импорт иконок
 import moreIcon from '../../assets/icons/moreVertical.png'; // Точки вертикальные
+import calendarIcon from '../../assets/icons/calendar.png'; // Календарь
 
 // Импорт стилей
 import './../../styles/pages/orderPage.css'; // Стили "Оформить заказ"
@@ -35,8 +37,8 @@ const OrderPage = () => {
     */
 
     const [formData, setFormData] = useState({ // Данные формы
-        name: null,
-        numberPhone: null
+        name: '',
+        numberPhone: ''
     });
     const [paymentMethod, setPaymentMethod] = useState(''); // Тип оплаты
     const [changeAmount, setChangeAmount] = useState(''); // Подготовить сдачу с суммы
@@ -45,21 +47,76 @@ const OrderPage = () => {
     const [selectedAddress, setSelectedAddress] = useState(null); // Адрес доставки по умолчанию
     const [isAddressValid, setIsAddressValid] = useState(false); // Статус валидации адреса доставки
     const [deliveryZones, setDeliveryZones] = useState([]); // Зоны доставки
+    const [deliveryInterval, setDeliveryInterval] = useState(''); // Интервал для доставки заказа
 
-    // Тестовые временные интервалы
-    const timeSlots = [
-        '10:00 — 11:00',
-        '11:00 — 12:00',
-        '12:00 — 13:00',
-        '13:00 — 14:00',
-        '14:00 — 15:00'
-    ];
+    const [currentServerTime, setCurrentServerTime] = useState(null); // Текущее время по МСК
+    const [deliverySchedule, setDeliverySchedule] = useState([]); // График работы доставки на ближайшие 7 дней
+    const [isTimeModalOpen, setIsTimeModalOpen] = useState(false); // Модальное окно выбора даты и времени доставки
+
+    // TODO добавить таймер на авто обновления времени и изменении доступного времени
 
     /* 
     ===========================
      Эффекты
     ===========================
     */
+
+    // Получаем и устанавливаем расписание работы доставки
+    useEffect(() => {
+        const loadDeliverySchedule = async () => {
+            try {
+                const response = await api.getNextSevenDaysSchedule();
+                setDeliverySchedule(response.data);
+
+                // Автовыбор первой доступной даты
+                const firstWorkingDay = response.data.find(d => d.isWorking);
+                if (firstWorkingDay) {
+                    setDeliveryDate(firstWorkingDay.date);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки расписания:', error);
+                if (window.history.length > 1) { // В случае ошибки происходит маршрутизация на предыдущую страницу или в меню
+                    window.history.back();
+                } else {
+                    window.location.href = '/menu';
+                }
+            }
+        };
+
+        loadDeliverySchedule();
+    }, []);
+
+    // Получаем все необходимые данные для формирования заказа
+    useEffect(() => {
+        const loadOrderSettings = async () => {
+            try {
+                const response = await api.getOrderSettings();
+                const {
+                    defaultPrice,
+                    isFreeDelivery,
+                    freeThreshold,
+                    interval,
+                    serverTime // Время в формате ISO
+                } = response.data;
+
+                setDeliveryInterval(interval); //Интервал доставки
+                setCurrentServerTime(new Date(serverTime)); // Устанавливаем текущее время по Москве
+
+                // Вывод данных для проверки
+                console.log('Order settings loaded:', {
+                    defaultPrice,
+                    isFreeDelivery,
+                    freeThreshold,
+                    interval,
+                    serverTime
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки настроек заказа:', error);
+            }
+        };
+
+        loadOrderSettings();
+    }, []);
 
     // Загрузка адреса при монтировании
     useEffect(() => {
@@ -156,7 +213,8 @@ const OrderPage = () => {
     ===========================
     */
 
-    const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0) + 120; // Сумма заказа (хардкод)
+    // Сумма заказа (хардкод. Тест)
+    const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0) + 120;
 
     // TODO - Если нет валидных товаров в корзине, то авто переход назад
 
@@ -236,76 +294,65 @@ const OrderPage = () => {
                     <section className="order-page-section">
                         <h2 className="order-page-subtitle">Доставка</h2>
 
-                        {/* Блок адреса */}
-                        <div className="order-page-input-group" style={{ marginBottom: '1.5rem' }}>
-                            <label className="order-page-label">Адрес доставки</label>
-                            {selectedAddress ? (
-                                <div className="order-address-card" title={!isAddressValid ? 'Изменилась зона доставки. Пожалуйста, обновите адрес.' : null}>
-                                    <div className={`order-address-content ${!isAddressValid ? 'invalid' : ''}`}>
-                                        <p className="order-address-main">
-                                            {selectedAddress.city}, {selectedAddress.street} {selectedAddress.house}
-                                            {selectedAddress.isPrivateHome && (
-                                                <span className="order-address-private">Частный дом</span>
-                                            )}
-                                        </p>
-                                        {(selectedAddress.apartment && !selectedAddress.isPrivateHome) && (
-                                            <p className="order-address-details">
-                                                <div>Подъезд: {selectedAddress.entrance}</div>
-                                                <div>Этаж: {selectedAddress.floor}</div>
-                                                <div>Квартира: {selectedAddress.apartment}</div>
-                                            </p>
-                                        )}
-                                    </div>
-                                    {!isAddressValid && (
-                                        <div className="address-validation-error">
-                                            Адрес вне зоны доставки
-                                        </div>
-                                    )}
-                                    <button
-                                        className="order-address-more"
-                                        onClick={() => {
-                                            window.addEventListener('address-updated', handleAddressUpdate);
-                                            openModal('list');
-                                        }}>
-                                        <img src={moreIcon} alt="Изменить" width={16} />
-                                    </button>
-                                </div>
-                            ) : (
-                                <button
-                                    className="order-page-add-address"
-                                    onClick={() => openModal('list')}>
-                                    + Добавить адрес доставки
-                                </button>
-                            )}
-
-                            {/* TODO, нужно добавить плашку с проверкой адреса. Если адерс валидный для зон досатвки, то плашка не отображается
-                            Наличие этой плашки не даст оформить заказ */}
-                        </div>
-
-                        {/* Блок даты и времени */}
-                        <div className="order-delivery-time-group">
+                        <div className="order-page-form-group">
+                            {/* Блок адреса */}
                             <div className="order-page-input-group">
-                                <label className="order-page-label">Дата доставки</label>
-                                <input
-                                    type="date"
-                                    className="order-page-input"
-                                    value={deliveryDate}
-                                    onChange={(e) => setDeliveryDate(e.target.value)}
-                                    min={new Date().toISOString().split('T')[0]}
-                                />
+                                <label className="order-page-label">Адрес доставки</label>
+
+                                {selectedAddress ? (
+                                    <div className="order-address-card" title={!isAddressValid ? 'Изменилась зона доставки. Пожалуйста, обновите адрес.' : null}>
+                                        <div className={`order-address-content ${!isAddressValid ? 'invalid' : ''}`}>
+                                            <p className="order-address-main">
+                                                {selectedAddress.city}, {selectedAddress.street} {selectedAddress.house}
+                                                {selectedAddress.isPrivateHome && (
+                                                    <span className="order-address-private">Частный дом</span>
+                                                )}
+                                            </p>
+                                            {(selectedAddress.apartment && !selectedAddress.isPrivateHome) && (
+                                                <p className="order-address-details">
+                                                    <div>Подъезд: {selectedAddress.entrance}</div>
+                                                    <div>Этаж: {selectedAddress.floor}</div>
+                                                    <div>Квартира: {selectedAddress.apartment}</div>
+                                                </p>
+                                            )}
+                                        </div>
+                                        {!isAddressValid && (
+                                            <div className="address-validation-error">
+                                                Адрес вне зоны доставки
+                                            </div>
+                                        )}
+                                        <button
+                                            className="order-address-more"
+                                            onClick={() => {
+                                                window.addEventListener('address-updated', handleAddressUpdate);
+                                                openModal('list');
+                                            }}>
+                                            <img src={moreIcon} alt="Изменить" width={16} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        className="order-page-add-address"
+                                        onClick={() => openModal('list')}>
+                                        + Добавить адрес доставки
+                                    </button>
+                                )}
                             </div>
 
+                            {/* Блок даты и времени */}
                             <div className="order-page-input-group">
-                                <label className="order-page-label">Время доставки</label>
-                                <select
-                                    className="order-page-input"
-                                    value={deliveryTime}
-                                    onChange={(e) => setDeliveryTime(e.target.value)}>
-                                    <option value="">Выберите время</option>
-                                    {timeSlots.map((time, index) => (
-                                        <option key={index} value={time}>{time}</option>
-                                    ))}
-                                </select>
+                                <label className="order-page-label">Дата и время доставки</label>
+                                <div className="order-delivery-time-group">
+                                    <button
+                                        className="order-page-time-select-btn"
+                                        onClick={() => setIsTimeModalOpen(true)}
+                                    >
+                                        <img src={calendarIcon} alt="Календарь" width={20} />
+                                        {deliveryDate && deliveryTime
+                                            ? `${new Date(deliveryDate).toLocaleDateString('ru-RU')} ${deliveryTime}`
+                                            : "Выбрать дату и время"}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -400,7 +447,22 @@ const OrderPage = () => {
                 </div>
             </div>
 
+            {/* Мнимая карта для отображения зоны валидации зон доставки */}
             <div id="hidden-map"></div>
+
+            {/* Модальное окно выбра даты и интервала доставки в заказе */}
+            <DeliveryTimeModal
+                isOpen={isTimeModalOpen}
+                onClose={() => setIsTimeModalOpen(false)}
+                deliverySchedule={deliverySchedule}
+                currentServerTime={currentServerTime}
+                deliveryInterval={deliveryInterval}
+                onSelect={(date, time) => {
+                    setDeliveryDate(date);
+                    setDeliveryTime(time);
+                }}
+            />
+
         </div>
     );
 }

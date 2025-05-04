@@ -132,7 +132,8 @@ const AddressModal = () => {
         try {
             const geocode = await ymaps.geocode(coordinates, {
                 kind: 'house',
-                results: 1
+                results: 1,
+                boundedBy: mapRef.current.map.getBounds() // Не сможет определить объект при слишком отдаленном расстоянии от объекта
             });
 
             const firstGeoObject = geocode.geoObjects.get(0);

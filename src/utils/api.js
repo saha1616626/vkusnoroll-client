@@ -64,6 +64,7 @@ const apiMethods = {
 
     // Рабочее время ресторана
     getCurrentDeliveryTime: () => api.get(`/deliveryWork/current`), // Получение актуального времени доставки
+    getNextSevenDaysSchedule: () => api.get(`/deliveryWork/next-seven-days`), // Получить график работы на следующие 7 дней
 
     // Адреса доставки
     getDeliveryAddressById: (id) => api.get(`/deliveryAddresses/address/${id}`),
@@ -72,8 +73,9 @@ const apiMethods = {
     updateDeliveryAddress: (addressId, data) => api.put(`/deliveryAddresses/${addressId}`, data),
     deleteDeliveryAddress: (addressId) => api.delete(`/deliveryAddresses/${addressId}`),
 
-    // Зоны доставки
-    getDeliveryZones: () => api.get('/deliverySettings/delivery-zones'),
+    // Настройки доставки
+    getDeliveryZones: () => api.get('/deliverySettings/delivery-zones'), // Зоны доставки
+    getOrderSettings: () => api.get('/deliverySettings/order-settings'), // Получаем все необходимые данные для формирования заказа
 
 };
 

@@ -297,7 +297,6 @@ input::-webkit-inner-spin-button {
     border: 1px solid #e9ecef;
     border-radius: 8px;
     padding: 1rem;
-    margin-top: 0.5rem;
     transition: all 0.3s;
 }
 
@@ -399,19 +398,42 @@ input::-webkit-inner-spin-button {
     color: #2d3436;
 }
 
-/* Группировка даты и времени */
-.order-delivery-time-group {
+/* Кнопка выбора даты и времени доставки */
+.order-page-time-select-btn {
+    width: 100%;
+    padding: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
     display: flex;
-    justify-content: left;
-    /* display: grid; */
-    /* grid-template-columns: 1fr 1fr; */
-    gap: 1.5rem;
-    margin-top: 1rem;
+    align-items: center;
+    gap: 1rem;
+    justify-content: center;
+    transition: all 0.3s;
 }
 
-.order-delivery-time-group input {
-    /* width: 277.2px; */
+.order-page-time-select-btn:hover {
+    border-color: #20b92d;
+    background: #f8fff9;
 }
+
+/* Группировка даты и времени */
+/* .order-delivery-time-group { */
+/* display: flex;
+    justify-content: space-around;
+    margin-top: 1rem; */
+/* } */
+
+/* Уравниваем поля даты и время */
+/* .order-delivery-time-group input { */
+/* width: calc(250px - 27.2px);
+    height: calc(50.8px - 29.2px); */
+/* } */
+
+/* .order-delivery-time-group select { */
+/* height: 48.8px; */
+/* } */
 
 /* Адаптивность */
 
