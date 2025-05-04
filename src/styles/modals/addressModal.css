@@ -89,7 +89,7 @@ body.no-scroll {
     cursor: pointer;
     transition: background 0.3s;
     margin-bottom: 30px;
-    
+
 }
 
 .address-modal-add-btn:hover {
@@ -107,7 +107,6 @@ body.no-scroll {
     position: relative;
     transition: transform 0.2s, box-shadow 0.2s;
     margin-bottom: 1rem;
-    /* min-height: 120px; */
 }
 
 .address-modal-address-card:hover {
@@ -205,7 +204,7 @@ body.no-scroll {
     align-items: center;
     gap: 8px;
     border-left: 3px solid #74b9ff;
-    
+
     display: flex;
     flex-wrap: nowrap;
     overflow: hidden;

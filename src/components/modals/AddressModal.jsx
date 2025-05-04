@@ -63,6 +63,7 @@ const AddressModal = () => {
 
     // Проверка авторизации. Обновляем состояние константы при запуске модального окна, чтобы при входе и выходе данные корректно отображались
     const isAuthorized = useMemo(() => !!localStorage.getItem('clientId'), [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps 
+    const [isZonesLoading, setIsZonesLoading] = useState(true); // Состояние загрузки зон доставки
 
     /* 
     ===========================
@@ -82,7 +83,7 @@ const AddressModal = () => {
 
     // Валидация зоны доставки
     const validateDeliveryZone = useCallback(async (coordinates) => {
-        if (!ymaps) return false;
+        if (!ymaps || deliveryZones.length === 0) return false;
 
         try {
             // Создаем временный массив для хранения созданных полигонов
@@ -126,34 +127,20 @@ const AddressModal = () => {
         }
     }, [deliveryZones, ymaps]);
 
-    // Геокодирование адреса (Из текста в координаты)
-    const geocodeAddress = useCallback(async (address) => {
+    //  Геокодирование адреса (Из координат в текст)
+    const reverseGeocode = useCallback(async (coordinates) => {
         try {
-            const geocode = await ymaps.geocode(address, { results: 1 });
+            const geocode = await ymaps.geocode(coordinates, {
+                kind: 'house',
+                results: 1
+            });
+
             const firstGeoObject = geocode.geoObjects.get(0);
-
-            if (!firstGeoObject) {
-                addLocalNotification('Адрес не найден');
-                return;
-            }
-
-            const coordinates = firstGeoObject.geometry.getCoordinates();
-            const displayName = firstGeoObject.getAddressLine();
-
-            setEditedAddress({ displayName, coordinates });
-            setSearchQuery(displayName);
-
-            // Обновляем карту
-            if (mapRef.current) {
-                mapRef.current.setCenter(coordinates, 17, {
-                    duration: 1000, // Продолжительность анимации в миллисекундах
-                    checkZoomRange: true,
-                    timingFunction: 'ease-in-out'
-                });
-            }
+            return firstGeoObject?.getAddressLine() || '';
         } catch (error) {
-            console.error('Ошибка геокодирования:', error);
-            addLocalNotification('Ошибка определения координат');
+            console.error('Ошибка обратного геокодирования:', error);
+            addLocalNotification('Ошибка получения адреса');
+            return '';
         }
     }, [ymaps, addLocalNotification]);
 
@@ -176,6 +163,8 @@ const AddressModal = () => {
         }
 
         if (mode === 'edit' && editAddress) { // В режиме редактирования при наличии передаваемого адреса вставляем выбранный адрес
+            // Используем координаты из БД
+            const coords = [editAddress.latitude, editAddress.longitude];
 
             // Устанавливаем данные формы из редактируемого адреса
             setFormData({
@@ -189,17 +178,17 @@ const AddressModal = () => {
                 comment: editAddress.comment || ''
             });
 
-            // Формируем полный адрес для поиска
-            const fullAddress = `${editAddress.city}, ${editAddress.street} ${editAddress.house}`;
-            setSearchQuery(fullAddress);
-
-            // Геокодирование адреса при отсутствии координат
-            geocodeAddress(fullAddress);
-
-            setSuggestions([]); // Очищаем список адресов в подсказе поиска
+            // Получаем адрес по координатам
+            reverseGeocode(coords).then(address => {
+                setSearchQuery(address);
+                setEditedAddress({
+                    displayName: address,
+                    coordinates: coords
+                });
+            });
         }
 
-    }, [mode, editAddress, geocodeAddress]);
+    }, [mode, editAddress, reverseGeocode]);
 
     // Закрываем меню для удаления и редактирования адреса
     useEffect(() => {
@@ -213,63 +202,103 @@ const AddressModal = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [showMenuId]);
 
+    // Эффект для уничтожения карты при закрытии модального окна
+    useEffect(() => {
+        return () => {
+            if (mapRef.current) {
+                mapRef.current.destroy();
+                mapRef.current = null;
+            }
+        };
+    }, []);
+
     /* 
     ===========================
      Управление картой
     ===========================
     */
 
-    const fetchAddresses = useCallback(async () => {
+    // Загрузка зон доставки
+    const fetchDeliveryZones = useCallback(async () => {
         try {
-            // Всегда загружаем зоны доставки
             const zonesRes = await api.getDeliveryZones();
             setDeliveryZones(zonesRes.data.zones || []);
+            setIsZonesLoading(false);
+        } catch (error) {
+            console.error('Ошибка загрузки зон:', error);
+            addLocalNotification('Ошибка загрузки зон доставки');
+            setIsZonesLoading(false);
+        }
+    }, [addLocalNotification]);
 
+    // Загружаем зоны доставки только при открытом модальном окне и готовом API
+    useEffect(() => {
+        if (isOpen && isReady) {
+            fetchDeliveryZones();
+        }
+    }, [isOpen, isReady, fetchDeliveryZones]);
+
+    // Загрузка адресов
+    const fetchAddresses = useCallback(async () => {
+        // Ждем загрузки Яндекс.Карт и зон доставки
+        if (isZonesLoading || !ymaps?.ready) return;
+
+        try {
             // Загружаем адреса ТОЛЬКО в режиме list
             if (mode === 'list') {
-                if (isAuthorized) { // Если авторизованный пользователь
+                let loadedAddresses = [];
+
+                // Загрузка адресов
+                if (isAuthorized) {
                     const addressesRes = await api.getDeliveryAddressesByIdClient(localStorage.getItem('clientId'));
-                    setAddresses(addressesRes.data.sort((a, b) => b.id - a.id) || []);
-
-                    // Устанавливаем выбранный адрес
-                    if (addressesRes.data.length > 0) {
-                        const savedAddressId = localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser');
-                        const targetAddress = addressesRes.data.find(addr =>
-                            addr.id.toString() === savedAddressId?.toString()
-                        );
-                        setSelectedAddress(targetAddress || addressesRes.data[0]);
-                    } else { // Если нет адресов, то обновляем шапку
-                        // Генерируем кастомное событие для обновления отображения адреса в шапке
-                        window.dispatchEvent(new Event('address-updated'));
-                    }
-                } else { // Для гостей
-                    const guestAddresses = JSON.parse(localStorage.getItem('guestAddresses') || []);
-                    setAddresses(guestAddresses.sort((a, b) => b.id - a.id));
-
-                    // Устанавливаем выбранный адрес
-                    if (guestAddresses.length > 0) {
-                        const savedAddress = JSON.parse(localStorage.getItem('SelectedDefaultAddressUnAuthorizedUser'));
-                        setSelectedAddress(savedAddress || guestAddresses[0]);
-                    } else {  // Если нет адресов, то обновляем шапку
-                        // Генерируем кастомное событие для обновления отображения адреса в шапке
-                        window.dispatchEvent(new Event('address-updated'));
-                    }
+                    loadedAddresses = addressesRes.data.map(addr => ({
+                        ...addr,
+                        latitude: addr.latitude,
+                        longitude: addr.longitude
+                    }));
+                } else {
+                    loadedAddresses = JSON.parse(localStorage.getItem('guestAddresses') || []);
                 }
-            }
 
-            // Центрируем карту по зонам доставки
-            if (zonesRes.data.zones?.length > 0 && mapRef.current) {
-                const bounds = ymaps.util.bounds.fromPoints(
-                    zonesRes.data.zones.flatMap(zone => zone.coordinates)
-                );
-                mapRef.current.map.setBounds(bounds);
+                // Убираем проверку валидности
+                const sortedAddresses = loadedAddresses.sort((a, b) => b.id - a.id);
+
+                // Установка выбранного адреса
+                if (isAuthorized) {
+                    const savedAddressId = localStorage.getItem('SelectedDefaultAddressIdAuthorizedUser');
+                    const targetAddress = sortedAddresses.find(addr =>
+                        addr.id.toString() === savedAddressId?.toString()
+                    );
+                    setSelectedAddress(sortedAddresses.length > 0 ? (targetAddress || sortedAddresses[0]) : null);
+                } else {
+                    const savedAddress = JSON.parse(localStorage.getItem('SelectedDefaultAddressUnAuthorizedUser'));
+                    setSelectedAddress(sortedAddresses.length > 0 ? (savedAddress || sortedAddresses[0]) : null);
+                }
+
+                setAddresses(sortedAddresses);
+
+                // Удаляем метку, если адреса отсутствуют
+                if (sortedAddresses?.length < 1 && mapRef.current) {
+                    // Удаляем все метки если адрес сброшен
+                    mapRef.current.geoObjects.removeAll((geoObject) => {
+                        return geoObject instanceof ymaps.Placemark;
+                    });
+                }
+
+                // Центрируем карту по зонам доставки
+                if (deliveryZones?.length > 0 && mapRef.current) {
+                    const bounds = ymaps.util.bounds.fromPoints(
+                        deliveryZones.flatMap(zone => zone.coordinates)
+                    );
+                    mapRef.current.map.setBounds(bounds);
+                }
             }
 
         } catch (error) {
             console.error('Ошибка загрузки:', error);
             addLocalNotification('Не удалось загрузить данные');
         }
-    }, [addLocalNotification, mode, ymaps, isAuthorized]);
+    }, [addLocalNotification, mode, ymaps, isAuthorized, deliveryZones, isZonesLoading]);
 
     // Загрузка адресов пользователя и зон доставки
     useEffect(() => {
@@ -287,30 +316,72 @@ const AddressModal = () => {
 
     // Выбор адреса
     useEffect(() => {
-        if (!selectedAddress || !ymaps) return; // Проверяем наличие адреса и загрузку API
+        if (!ymaps) return; // Проверяем загрузку API карт
 
-        // Дополнительная проверка на случай, если адрес был сброшен
-        if (!selectedAddress?.city || !selectedAddress?.street || !selectedAddress?.house) return;
-
-        const fullAddress = `${selectedAddress.city}, ${selectedAddress.street} ${selectedAddress.house}`;
-        geocodeAddress(fullAddress);
-
-        if (isAuthorized) { // Авторизованный пользователь
-            const clientId = localStorage.getItem('clientId');
-            if (!!clientId) {
-                // Сохраняем в локальное хранилище выбранный адрес
-                localStorage.setItem('SelectedDefaultAddressIdAuthorizedUser', selectedAddress.id)
-
-                // Генерируем кастомное событие для обновления отображения адреса в шапке
-                window.dispatchEvent(new Event('address-updated'));
-            }
-        } else {  // Гость
-            localStorage.setItem('SelectedDefaultAddressUnAuthorizedUser', JSON.stringify(selectedAddress));
-
+        if (!selectedAddress && mapRef.current) {
             // Генерируем кастомное событие для обновления отображения адреса в шапке
             window.dispatchEvent(new Event('address-updated'));
+
+            // Удаляем все метки если адрес сброшен
+            mapRef.current.geoObjects.removeAll((geoObject) => {
+                return geoObject instanceof ymaps.Placemark;
+            });
+            return;
         }
-    }, [selectedAddress, geocodeAddress, ymaps, isAuthorized]);
+
+        // Проверяем наличие координат в выбранном адресе
+        if (!selectedAddress?.latitude || !selectedAddress?.longitude) {
+            console.error('Выбранный адрес не содержит координат');
+            return;
+        }
+
+        const coordinates = [selectedAddress.latitude, selectedAddress.longitude];
+
+        // Обновляем состояние с координатами
+        setEditedAddress({
+            displayName: selectedAddress.displayName || `${selectedAddress.city}, ${selectedAddress.street} ${selectedAddress.house}`,
+            coordinates
+        });
+
+        // Обновляем позицию карты
+        if (mapRef.current) {
+            mapRef.current.setCenter(coordinates, 17, {
+                duration: 1000,
+                checkZoomRange: true,
+                timingFunction: 'ease-in-out'
+            });
+
+            // Обновляем метку
+            mapRef.current.geoObjects.removeAll((geoObject) => {
+                return geoObject instanceof ymaps.Placemark;
+            });
+
+            const placemark = new ymaps.Placemark(
+                coordinates,
+                { balloonContent: selectedAddress.displayName },
+                { preset: 'islands#redIcon' }
+            );
+            mapRef.current.geoObjects.add(placemark);
+        }
+
+
+        // Сохранение в локальное хранилище
+        if (isAuthorized) { // Авторизованный пользователь
+            localStorage.setItem('SelectedDefaultAddressIdAuthorizedUser', selectedAddress.id);
+        } else {
+            localStorage.setItem(
+                'SelectedDefaultAddressUnAuthorizedUser',
+                JSON.stringify({
+                    ...selectedAddress,
+                    coordinates // Добавляем координаты для гостей
+                })
+            );
+        }
+
+        // Генерируем кастомное событие для обновления отображения адреса в шапке
+        window.dispatchEvent(new Event('address-updated'));
+
+    }, [selectedAddress, ymaps, isAuthorized]);
 
     // Обработчик выбора адреса в поиске
     const handleSelectSuggestion = useCallback(async (suggestion) => {
@@ -350,17 +421,18 @@ const AddressModal = () => {
             // Парсим адресные компоненты
             await ymaps.ready();
             const geocode = await ymaps.geocode(suggestion.displayName, { results: 1 }); // Ограничение количества результатов геокодирования
+            const firstGeoObject = geocode.geoObjects.get(0);
 
             // Проверка наличия результатов
-            if (!geocode.geoObjects.get(0)) {
+            if (!firstGeoObject) {
                 throw new Error('Адрес не найден');
             }
 
-            const addressComponents = geocode.geoObjects.get(0).properties.get('metaDataProperty.GeocoderMetaData.Address.Components');
+            const addressComponents = firstGeoObject.properties.get('metaDataProperty.GeocoderMetaData.Address.Components');
 
             const newFormData = {
                 city: addressComponents.find(c => c.kind === 'locality')?.name || '',
-                street: addressComponents.find(c => c.kind === 'street')?.name || '',
+                street: addressComponents.find(c => c.kind === 'street')?.name || addressComponents.find(c => c.kind === 'district')?.name || '',
                 house: addressComponents.find(c => c.kind === 'house')?.name || '',
                 isPrivateHome: false,
                 // Сброс дополнительных полей
@@ -398,47 +470,42 @@ const AddressModal = () => {
                     if (mode === 'list') return; // Нельзя поставить маркер в режиме "list"
 
                     const coordinates = e.get('coords');
+                    const address = await reverseGeocode(coordinates);
 
-                    // Проверка формата координат
-                    if (!Array.isArray(coordinates)) {
-                        throw new Error('Некорректные координаты');
+                    // Дополнительное геокодирование для получения компонентов
+                    const geocode = await ymaps.geocode(address, { results: 1 });
+                    const firstGeoObject = geocode.geoObjects.get(0);
+
+                    if (!firstGeoObject) {
+                        throw new Error('Адрес не найден');
                     }
 
-                    // Явно указываем параметры геокодирования
-                    const res = await ymaps.geocode(coordinates, {
-                        kind: 'house', // Поиск только домов
-                        results: 1, // Ограничение количества результатов 
-                        boundedBy: mapRef.current.map.getBounds() // Поиск в текущей области карты
-                    });
-
-                    // Проверяем наличие результатов
-                    if (!res.geoObjects || res.geoObjects.getLength() === 0) {
-                        addLocalNotification('Адрес не найден');
-                        return;
+                    // Центрируем карту на координатах из БД
+                    if (mapRef.current) {
+                        mapRef.current.setCenter(coordinates, 17, {
+                            duration: 1000,
+                            checkZoomRange: true,
+                            timingFunction: 'ease-in-out'
+                        });
                     }
 
-                    const firstGeoObject = res.geoObjects.get(0);
-                    const address = firstGeoObject.getAddressLine();
+                    const addressComponents = firstGeoObject.properties.get('metaDataProperty.GeocoderMetaData.Address.Components');
 
-                    // Дополнительная проверка компонентов адреса
-                    const components = firstGeoObject.properties.get('metaDataProperty.GeocoderMetaData.Address.Components');
-                    if (!components) {
-                        addLocalNotification('Не удалось разобрать адрес');
-                        return;
-                    }
+                    const newFormData = {
+                        city: addressComponents.find(c => c.kind === 'locality')?.name || '',
+                        street: addressComponents.find(c => c.kind === 'street')?.name || addressComponents.find(c => c.kind === 'district')?.name || '',
+                        house: addressComponents.find(c => c.kind === 'house')?.name || '',
+                        isPrivateHome: false, // Сохраняем текущее значение
+                        entrance: formData.entrance,
+                        floor: formData.floor,
+                        apartment: formData.apartment,
+                        comment: formData.comment
+                    };
 
                     // Обновляем состояние
+                    setFormData(newFormData);
                     setSearchQuery(address);
-                    handleSelectSuggestion({
-                        displayName: address,
-                        coordinates: coordinates
-                    });
-
-                    // Обновляем состояние выбранного адреса
-                    setEditedAddress({
-                        displayName: address,
-                        coordinates: coordinates
-                    });
+                    setEditedAddress({ displayName: address, coordinates });
                 } catch (error) {
                     console.error('Ошибка обработки клика:', error);
                     addLocalNotification('Ошибка определения адреса');
@@ -459,7 +526,7 @@ const AddressModal = () => {
                 }
             };
         });
-    }, [ymaps, isReady, isOpen, addLocalNotification, handleSelectSuggestion, deliveryZones, mode]);
+    }, [addLocalNotification, isOpen, isReady, mode, reverseGeocode, ymaps]); // eslint-disable-line react-hooks/exhaustive-deps 
 
     // Эффект для отрисовки/обновления полигонов при изменении deliveryZones
     useEffect(() => {
@@ -601,6 +668,8 @@ const AddressModal = () => {
         }
 
         try {
+            // Проверяем, что координаты соответствуют формату
+            const [latitude, longitude] = editedAddress.coordinates;
 
             // Подготовка данных для отправки
             const dataToSend = {
@@ -613,8 +682,9 @@ const AddressModal = () => {
                 floor: formData.floor?.trim() || null,
                 apartment: formData.apartment?.trim() || null,
                 comment: formData.comment?.trim() || null,
+                latitude,
+                longitude
             };
-
 
             if (isAuthorized) { // Авторизованный пользователь
                 // Вызов API
@@ -695,6 +765,12 @@ const AddressModal = () => {
                 const updatedAddresses = guestAddresses.filter(addr => addr.id !== addressBeingDeletedId);
                 localStorage.setItem('guestAddresses', JSON.stringify(updatedAddresses));
 
+                // Проверяем наличие адресов
+                if (updatedAddresses.length === 0) {
+                    setSelectedAddress(null);
+                    localStorage.removeItem('SelectedDefaultAddressUnAuthorizedUser');
+                }
+
                 // Если удаляемый адрес был выбранным - сбрасываем выбор
                 if (selectedAddress?.id === addressBeingDeletedId) {
                     localStorage.removeItem('SelectedDefaultAddressUnAuthorizedUser');
@@ -754,13 +830,17 @@ const AddressModal = () => {
                             ) : (
                                 <div style={{ height: '0' }}>
                                     {addresses.map(address => (
-                                        <div key={address.id} className="address-modal-address-card"
-                                            onClick={() => setSelectedAddress(address)}>
+                                        <div
+                                            key={address.id}
+                                            className="address-modal-address-card"
+                                            onClick={() => setSelectedAddress(address)}
+                                        >
                                             <div className="address-modal-radio-wrapper">
                                                 <input
                                                     type="radio"
                                                     checked={selectedAddress?.id === address.id}
                                                     onChange={() => setSelectedAddress(address)}
+                                                    disabled={false}
                                                 />
                                             </div>
 
@@ -778,7 +858,7 @@ const AddressModal = () => {
                                                     {address.apartment && (
                                                         <div className="address-modal-detail-item">
                                                             <span className="icon">🏢</span>
-                                                            Кв./офис: {address.apartment}
+                                                            Квартира: {address.apartment}
                                                         </div>
                                                     )}
 

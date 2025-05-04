@@ -1,13 +1,14 @@
 // Страница оформления заказа
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { IMaskInput } from 'react-imask'; // Создание маски на номер телефона
 import { Link, useNavigate } from 'react-router-dom';
 
 // Импорт компонентов
-import { useCart } from '../contexts/CartContext';
+import { useCart } from '../contexts/CartContext'; // Контекс корзины
 import { useAddressModal } from "../contexts/AddressModalContext"; // Контекст модального окна "Адреса доставки"
 import api from '../../utils/api'; // API сервера
+import { useYmaps } from './../Hooks/useYmaps'; // Кастомный хук для использования Яндекс карты
 
 // Импорт иконок
 import moreIcon from '../../assets/icons/moreVertical.png'; // Точки вертикальные
@@ -25,6 +26,7 @@ const OrderPage = () => {
 
     const { cartItems } = useCart();  // Состояние корзины
     const { openModal } = useAddressModal(); // Состояние для модального окна "Адреса доставки"
+    const { ymaps, isReady } = useYmaps(); // API янедкс карт
 
     /* 
     ===========================
@@ -41,6 +43,8 @@ const OrderPage = () => {
     const [deliveryDate, setDeliveryDate] = useState(''); // Дата доставки
     const [deliveryTime, setDeliveryTime] = useState(''); // Время доставки
     const [selectedAddress, setSelectedAddress] = useState(null); // Адрес доставки по умолчанию
+    const [isAddressValid, setIsAddressValid] = useState(false); // Статус валидации адреса доставки
+    const [deliveryZones, setDeliveryZones] = useState([]); // Зоны доставки
 
     // Тестовые временные интервалы
     const timeSlots = [
@@ -86,6 +90,66 @@ const OrderPage = () => {
         return () => window.removeEventListener('address-updated', loadAddress);
     }, []);
 
+    // Загрузка зон доставки
+    useEffect(() => {
+        const loadZones = async () => {
+            try {
+                const response = await api.getDeliveryZones();
+                setDeliveryZones(response.data.zones || []);
+            } catch (error) {
+                console.error('Ошибка загрузки зон:', error);
+            }
+        };
+        loadZones();
+    }, []);
+
+    // Валидация адреса для существующих зон
+    useEffect(() => {
+        const validateAddress = async () => {
+            if (!selectedAddress || !ymaps || !isReady || !deliveryZones) return;
+
+            const isAuthorized = !!localStorage.getItem('clientId');
+            const tempMap = new ymaps.Map('hidden-map', { // Создаем скрытую карту
+                center: [56.129057, 40.406635],
+                zoom: 12.5,
+                controls: ['zoomControl']
+            });
+
+            try {
+                // Используем координаты из сохраненного адреса
+                const coordinates = isAuthorized
+                    ? [selectedAddress.latitude, selectedAddress.longitude]
+                    : selectedAddress.coordinates;
+
+                // Создаем временные полигоны
+                const polygons = deliveryZones.map(zone => {
+                    return new ymaps.Polygon([zone.coordinates], {}, {
+                        fillOpacity: 0.001,
+                        strokeWidth: 0
+                    });
+                });
+
+                // Добавляем полигоны на скрытую карту
+                polygons.forEach(polygon => tempMap.geoObjects.add(polygon));
+
+                // Проверка вхождения
+                const isValid = polygons.some(polygon =>
+                    polygon.geometry.contains(coordinates)
+                );
+
+                setIsAddressValid(isValid);
+            } catch (error) {
+                console.error('Ошибка валидации:', error);
+                setIsAddressValid(false);
+            } finally {
+                // Уничтожаем временную карту
+                tempMap.destroy();
+            }
+        };
+
+        validateAddress();
+    }, [selectedAddress, deliveryZones, ymaps, isReady]);
+
     /* 
     ===========================
      Функции
@@ -93,6 +157,8 @@ const OrderPage = () => {
     */
 
     const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0) + 120; // Сумма заказа (хардкод)
+
+    // TODO - Если нет валидных товаров в корзине, то авто переход назад
 
     /* 
     ===========================
@@ -174,8 +240,8 @@ const OrderPage = () => {
                         <div className="order-page-input-group" style={{ marginBottom: '1.5rem' }}>
                             <label className="order-page-label">Адрес доставки</label>
                             {selectedAddress ? (
-                                <div className="order-address-card">
-                                    <div className="order-address-content">
+                                <div className="order-address-card" title={!isAddressValid ? 'Изменилась зона доставки. Пожалуйста, обновите адрес.' : null}>
+                                    <div className={`order-address-content ${!isAddressValid ? 'invalid' : ''}`}>
                                         <p className="order-address-main">
                                             {selectedAddress.city}, {selectedAddress.street} {selectedAddress.house}
                                             {selectedAddress.isPrivateHome && (
@@ -186,10 +252,15 @@ const OrderPage = () => {
                                             <p className="order-address-details">
                                                 <div>Подъезд: {selectedAddress.entrance}</div>
                                                 <div>Этаж: {selectedAddress.floor}</div>
-                                                <div>Кв./офис: {selectedAddress.apartment}</div>
+                                                <div>Квартира: {selectedAddress.apartment}</div>
                                             </p>
                                         )}
                                     </div>
+                                    {!isAddressValid && (
+                                        <div className="address-validation-error">
+                                            Адрес вне зоны доставки
+                                        </div>
+                                    )}
                                     <button
                                         className="order-address-more"
                                         onClick={() => {
@@ -206,6 +277,9 @@ const OrderPage = () => {
                                     + Добавить адрес доставки
                                 </button>
                             )}
+
+                            {/* TODO, нужно добавить плашку с проверкой адреса. Если адерс валидный для зон досатвки, то плашка не отображается
+                            Наличие этой плашки не даст оформить заказ */}
                         </div>
 
                         {/* Блок даты и времени */}
@@ -218,7 +292,6 @@ const OrderPage = () => {
                                     value={deliveryDate}
                                     onChange={(e) => setDeliveryDate(e.target.value)}
                                     min={new Date().toISOString().split('T')[0]}
-                                    // style={{ width: 'calc(100% - 27.2px)' }}
                                 />
                             </div>
 
@@ -326,6 +399,8 @@ const OrderPage = () => {
                     </section>
                 </div>
             </div>
+
+            <div id="hidden-map"></div>
         </div>
     );
 }

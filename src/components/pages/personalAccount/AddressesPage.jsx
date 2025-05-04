@@ -186,7 +186,7 @@ const AddressesPage = () => {
                                         {address.apartment && (
                                             <div className="addresses-page-detail-item">
                                                 <span className="icon">🏢</span>
-                                                Кв./офис: {address.apartment}
+                                                Квартира: {address.apartment}
                                             </div>
                                         )}
                                         {(address.entrance || address.floor) && (
