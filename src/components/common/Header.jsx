@@ -116,6 +116,17 @@ const Header = () => {
 
                 loadAddress();
             } else {  // Гость
+   
+                // Получаем адреса из localStorage и парсим их
+                const guestAddresses = JSON.parse(localStorage.getItem('guestAddresses'));
+
+                // Если список адресов пуст, то удаляем выбранный адрес
+                if (!guestAddresses || guestAddresses.length === 0) {
+                    localStorage.removeItem('SelectedDefaultAddressUnAuthorizedUser');
+                    setCurrentAddress('');
+                    return;
+                }
+
                 const savedAddress = JSON.parse(
                     localStorage.getItem('SelectedDefaultAddressUnAuthorizedUser') || 'null'
                 );
@@ -127,7 +138,7 @@ const Header = () => {
 
                 if (savedAddress) {
                     setCurrentAddress(
-                        savedAddress.displayName || 
+                        savedAddress.displayName ||
                         `${savedAddress.city}, ${savedAddress.street} ${savedAddress.house}`
                     );
                 } else {

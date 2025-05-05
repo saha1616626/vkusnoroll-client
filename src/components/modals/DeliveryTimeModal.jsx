@@ -1,6 +1,6 @@
 // Модальное окно выбра даты и интервала доставки в заказе
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 
 // Импорт компонентов
@@ -17,7 +17,8 @@ const DeliveryTimeModal = ({
     deliverySchedule,
     currentServerTime,
     deliveryInterval,
-    onSelect
+    onSelect,
+    refreshKey
 }) => {
 
 
@@ -98,11 +99,11 @@ const DeliveryTimeModal = ({
     };
 
     // Фильтрация слотов исходя из текущего времени
-    const generateFilteredSlots = (selectedDay) => {
+    const generateFilteredSlots = useCallback((selectedDay) => {
         let slots = generateTimeSlots(
             selectedDay.start,
             selectedDay.end,
-            deliveryInterval
+            deliveryInterval  // Используем актуальный интервал из пропсов
         );
 
         if (currentServerTime &&
@@ -117,7 +118,7 @@ const DeliveryTimeModal = ({
         }
 
         return slots;
-    };
+    }, [deliveryInterval, currentServerTime]);
 
     // Сохранение выбранного времени и даты
     const handleConfirm = () => {

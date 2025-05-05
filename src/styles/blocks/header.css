@@ -185,7 +185,7 @@
     box-shadow: 0 2px 8px rgba(33, 150, 243, 0.2);
     border: none;
     cursor: pointer;
-    max-width: 300px;
+    max-width: 250px;
     text-align: left;
 
     /* Второй вариант стилей */
@@ -235,6 +235,9 @@
     font-size: 12px;
     opacity: 0.9;
     display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
     /* Второй вариант стилей */
     /* display: block;

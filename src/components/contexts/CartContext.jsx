@@ -18,16 +18,42 @@ export const CartProvider = ({ children }) => {
             if (localStorage.getItem('authUserToken')) { // Корзина авторизованного пользователя
                 const { data } = await api.getCart(); // Загружаем из БД
                 items = data.items;
-            } else {
-                items = JSON.parse(localStorage.getItem('cart')) || []; // Корзина неавторизованного пользователя
+            } else { // Корзина неавторизованного пользователя
+                // Получаем RAW данные из localStorage
+                const rawCart = JSON.parse(localStorage.getItem('cart')) || [];
+
+                // Получаем актуальный список блюд
+                const { data: dishes } = await api.getDishes();
+
+                // Фильтруем несуществующие товары
+                const validItems = rawCart.filter(cartItem =>
+                    dishes.some(d => d.id === cartItem.id)
+                );
+
+                // Сохраняем очищенную корзину
+                localStorage.setItem('cart', JSON.stringify(validItems));
+                items = validItems;
             }
 
-            // Получаем полные данные блюд (т.к сохранены только кол-во и id)
-            const { data: dishes } = await api.getDishes();
+            // Получаем полные данные блюд и категорий
+            const [{ data: dishes }, { data: categories }] = await Promise.all([
+                api.getDishes(),
+                api.getCategories()
+            ]);
 
             const enrichedItems = items.map(cartItem => {
-                const dish = dishes.find(d => d.id === cartItem.id); // Если есть блюдо из списка в корзине
-                return dish ? { ...dish, quantity: cartItem.quantity } : null; // Присваиваем данные с учетом имеющихся
+                const dish = dishes.find(d => d.id === cartItem.id); // Ищем блюдо
+                if (!dish) return null;
+
+                // Проверяем категорию блюда
+                const category = categories.find(c => c.id === dish.categoryId);
+                const isCategoryArchived = category?.isArchived || false;
+
+                return { // Если категория в архиве, то и блюдо вне зависимости от состояния будет в архиве
+                    ...dish,
+                    quantity: cartItem.quantity,
+                    isArchived: dish.isArchived || isCategoryArchived
+                };
             }).filter(Boolean);
 
             setCartItems(enrichedItems);

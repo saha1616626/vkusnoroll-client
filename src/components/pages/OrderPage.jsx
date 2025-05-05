@@ -10,6 +10,7 @@ import { useAddressModal } from "../contexts/AddressModalContext"; // Конте
 import api from '../../utils/api'; // API сервера
 import { useYmaps } from './../Hooks/useYmaps'; // Кастомный хук для использования Яндекс карты
 import DeliveryTimeModal from '../modals/DeliveryTimeModal'; // Модальное окно выбора даты и времени доставки
+import NotificationBanner from '../ui/NotificationBanner'; // Баннер уведомления
 
 // Импорт иконок
 import moreIcon from '../../assets/icons/moreVertical.png'; // Точки вертикальные
@@ -26,9 +27,10 @@ const OrderPage = () => {
     ===========================
     */
 
-    const { cartItems } = useCart();  // Состояние корзины
+    const { cartItems, loadCart } = useCart();  // Состояние корзины
     const { openModal } = useAddressModal(); // Состояние для модального окна "Адреса доставки"
     const { ymaps, isReady } = useYmaps(); // API янедкс карт
+    const navigate = useNavigate(); // Для управления маршрутом приложения
 
     /* 
     ===========================
@@ -52,14 +54,106 @@ const OrderPage = () => {
     const [currentServerTime, setCurrentServerTime] = useState(null); // Текущее время по МСК
     const [deliverySchedule, setDeliverySchedule] = useState([]); // График работы доставки на ближайшие 7 дней
     const [isTimeModalOpen, setIsTimeModalOpen] = useState(false); // Модальное окно выбора даты и времени доставки
+    const [orderSettings, setOrderSettings] = useState({ // Детали стоимости доставки
+        defaultPrice: 0,
+        isFreeDelivery: false,
+        freeThreshold: 0
+    });
+    const [deliveryCost, setDeliveryCost] = useState(null); // Стоимость доставки
+    const [freeDeliveryMessage, setFreeDeliveryMessage] = useState(''); // Сообщение о бесплатной доставке или ее условиях
+    const [removedItems, setRemovedItems] = useState([]); // Удаленные товары из списка в заказе (Архивные товары или удаленные из БД)
+    const [refreshKey, setRefreshKey] = useState(0); // Для принудительного обновления данных на странице по таймеру
 
-    // TODO добавить таймер на авто обновления времени и изменении доступного времени
+    const [isCartLoading, setIsCartLoading] = useState(true); // Состояние загрузки корзины
 
     /* 
     ===========================
      Эффекты
     ===========================
     */
+
+
+    // Обновление данных на странице по окончании заданного времени
+    useEffect(() => {
+        const interval = setInterval(async () => {
+            // Сбрасываем выбранное время
+            setDeliveryDate('');
+            setDeliveryTime('');
+
+            // Перезагружаем данные
+            try {
+                const [scheduleRes, settingsRes, zonesRes] = await Promise.all([
+                    api.getNextSevenDaysSchedule(), // Получаем расписание
+                    api.getOrderSettings(), // Базовые настройки для оформления заказа
+                    api.getDeliveryZones() // Зоны доставки
+                ]);
+
+                setDeliveryInterval(settingsRes.data.interval); // Интервал доставки
+                setDeliverySchedule(scheduleRes.data);
+                setDeliveryZones(zonesRes.data.zones);
+                setCurrentServerTime(new Date(settingsRes.data.serverTime));
+                setOrderSettings({ // Получаем детали стоимости доставки
+                    defaultPrice: settingsRes.data.defaultPrice || 0,
+                    isFreeDelivery: Boolean(settingsRes.data.isFreeDelivery),
+                    freeThreshold: Math.max(Number(settingsRes.data.freeThreshold) || 0, 0)
+                });
+                setRefreshKey(prev => prev + 1); // Обновляем ключ для валидации товаров
+            } catch (error) {
+                console.error('Ошибка автообновления:', error);
+            }
+        }, 10 * 60 * 100); // 5 минут
+
+        return () => clearInterval(interval);
+    }, []); // Очищаем при размонтировании
+
+    // Проверка товаров при загрузке и обновлении
+    useEffect(() => {
+        const checkItemsValidity = async () => {
+            setIsCartLoading(true); // Корзина загружается
+            try {
+                await loadCart(); // Ждем завершения загрузки корзины
+
+                const validItems = [];
+                const removed = [];
+
+                for (const item of cartItems) {
+                    if (!item.isArchived) validItems.push(item);
+                    else removed.push(item);
+                }
+
+                setRemovedItems(removed); // Оповещаем пользователя, что есть блюда, которые были убраны из заказа
+
+                // Откладываем проверку пустой корзины до загрузки данных
+                if (isCartLoading) return;
+
+                if (validItems.length === 0) {
+                    navigate('/menu');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки корзины:', error);
+            } finally {
+                setIsCartLoading(false);
+            }
+        };
+
+        checkItemsValidity();
+        // Зависимость ТОЛЬКО от ключа обновления
+    }, [refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps 
+
+    // Проверка товаров в заказе при изменении корзины. (Это необходимо, потому что состав корзины можно менять в момент оформления заказа, и это будет отражаться на его составе)
+    useEffect(() => {
+        if (isCartLoading) return; // Если корзина еще не загружена
+
+        const validItems = []; // Валидные товары из корзины
+
+        for (const item of cartItems) {
+            if (!item.isArchived) validItems.push(item);
+        }
+
+        if (cartItems.length === 0 || validItems.length === 0) {
+            navigate('/menu');
+        }
+    }, [cartItems]); // eslint-disable-line react-hooks/exhaustive-deps 
 
     // Получаем и устанавливаем расписание работы доставки
     useEffect(() => {
@@ -99,16 +193,12 @@ const OrderPage = () => {
                     serverTime // Время в формате ISO
                 } = response.data;
 
-                setDeliveryInterval(interval); //Интервал доставки
-                setCurrentServerTime(new Date(serverTime)); // Устанавливаем текущее время по Москве
-
-                // Вывод данных для проверки
-                console.log('Order settings loaded:', {
-                    defaultPrice,
-                    isFreeDelivery,
-                    freeThreshold,
-                    interval,
-                    serverTime
+                setDeliveryInterval(interval); // Интервал доставки
+                setCurrentServerTime(new Date(serverTime)); // Устанавливаем текущее время по Москве из БД
+                setOrderSettings({ // Получаем детали стоимости доставки
+                    defaultPrice: defaultPrice || 0,
+                    isFreeDelivery: Boolean(isFreeDelivery),
+                    freeThreshold: Math.max(Number(freeThreshold) || 0, 0)
                 });
             } catch (error) {
                 console.error('Ошибка загрузки настроек заказа:', error);
@@ -173,31 +263,44 @@ const OrderPage = () => {
             });
 
             try {
-                // Используем координаты из сохраненного адреса
-                const coordinates = isAuthorized
-                    ? [selectedAddress.latitude, selectedAddress.longitude]
-                    : selectedAddress.coordinates;
+                // Получаем и валидируем координаты
+                let coordinates;
+                if (isAuthorized) {
+                    coordinates = [
+                        parseFloat(selectedAddress.latitude),
+                        parseFloat(selectedAddress.longitude)
+                    ];
+                } else {
+                    coordinates = selectedAddress.coordinates;
+                }
 
-                // Создаем временные полигоны
-                const polygons = deliveryZones.map(zone => {
-                    return new ymaps.Polygon([zone.coordinates], {}, {
-                        fillOpacity: 0.001,
-                        strokeWidth: 0
-                    });
-                });
+                if (!coordinates || coordinates.some(c => isNaN(c)) || coordinates.length !== 2) {
+                    setIsAddressValid(false);
+                    setDeliveryCost(null);
+                    return;
+                }
 
-                // Добавляем полигоны на скрытую карту
-                polygons.forEach(polygon => tempMap.geoObjects.add(polygon));
+                // Создаем полигоны и проверяем принадлежность
+                let isValid = false;
+                let matchedZone = null;
 
-                // Проверка вхождения
-                const isValid = polygons.some(polygon =>
-                    polygon.geometry.contains(coordinates)
-                );
+                for (const zone of deliveryZones) {
+                    const polygon = new ymaps.Polygon([zone.coordinates]);
+                    tempMap.geoObjects.add(polygon);
+
+                    if (polygon.geometry.contains(coordinates)) {
+                        isValid = true;
+                        matchedZone = zone;
+                        break;
+                    }
+                }
 
                 setIsAddressValid(isValid);
+                setDeliveryCost(isValid ? matchedZone?.price ?? orderSettings.defaultPrice : null); // Стоимость доставки для принадлежащей зоны
             } catch (error) {
                 console.error('Ошибка валидации:', error);
                 setIsAddressValid(false);
+                setDeliveryCost(null);
             } finally {
                 // Уничтожаем временную карту
                 tempMap.destroy();
@@ -205,7 +308,29 @@ const OrderPage = () => {
         };
 
         validateAddress();
-    }, [selectedAddress, deliveryZones, ymaps, isReady]);
+    }, [selectedAddress, deliveryZones, ymaps, isReady, orderSettings]);
+
+    // Расчет итоговой стоимости доставки и информирование пользователя сообщением
+    useEffect(() => {
+        const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const delivery = deliveryCost ?? 0;
+
+        let finalDeliveryCost = delivery;
+        let message = '';
+
+        if (orderSettings.isFreeDelivery && orderSettings.freeThreshold > 0) {
+            if (subtotal >= orderSettings.freeThreshold) {
+                finalDeliveryCost = 0;
+                message = 'Бесплатная доставка!';
+            } else {
+                const remaining = orderSettings.freeThreshold - subtotal;
+                message = `До бесплатной доставки осталось ${remaining}₽`;
+            }
+        }
+
+        setDeliveryCost(finalDeliveryCost);
+        setFreeDeliveryMessage(message);
+    }, [cartItems, deliveryCost, orderSettings]);
 
     /* 
     ===========================
@@ -309,11 +434,11 @@ const OrderPage = () => {
                                                 )}
                                             </p>
                                             {(selectedAddress.apartment && !selectedAddress.isPrivateHome) && (
-                                                <p className="order-address-details">
+                                                <div className="order-address-details">
                                                     <div>Подъезд: {selectedAddress.entrance}</div>
                                                     <div>Этаж: {selectedAddress.floor}</div>
                                                     <div>Квартира: {selectedAddress.apartment}</div>
-                                                </p>
+                                                </div>
                                             )}
                                         </div>
                                         {!isAddressValid && (
@@ -365,7 +490,6 @@ const OrderPage = () => {
                                 <div key={method} className="order-payment-method-container">
                                     <label
                                         className="order-page-payment-label"
-                                        onClick={() => setPaymentMethod(method)}
                                     >
                                         <div className="order-payment-radio-group">
                                             <input
@@ -373,6 +497,7 @@ const OrderPage = () => {
                                                 name="payment"
                                                 className="order-page-radio"
                                                 checked={paymentMethod === method}
+                                                onChange={() => setPaymentMethod(method)}
                                             />
                                             <span className="order-page-payment-text">{method}</span>
                                         </div>
@@ -430,13 +555,32 @@ const OrderPage = () => {
                         <div className="order-page-divider" />
 
                         <div className="order-page-summary">
+
+                            {freeDeliveryMessage && (
+                                <div
+                                    className={`delivery-message ${deliveryCost === 0 ? 'free' : 'info'}`}
+                                    // Скрываем сообщение о бесплатной доставке
+                                    style={{ display: deliveryCost === 0 ? 'none' : '' }}>
+                                    {freeDeliveryMessage}
+                                </div>
+                            )}
+                            
                             <div className="order-page-summary-row">
                                 <span>Доставка:</span>
-                                <span>120 ₽</span>
+                                {!isAddressValid ? (
+                                    <span className="delivery-error">Укажите валидный адрес</span>
+                                ) : deliveryCost === 0 ? (
+                                    <span className="free-delivery">Бесплатно</span>
+                                ) : (
+                                    <span>{deliveryCost} ₽</span>
+                                )}
                             </div>
+
                             <div className="order-page-summary-row">
                                 <span>Итого:</span>
-                                <span className="order-page-total">1240 ₽</span>
+                                <span className="order-page-total">
+                                    {cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0) + (isAddressValid ? deliveryCost : 0)} ₽
+                                </span>
                             </div>
                         </div>
 
@@ -461,7 +605,16 @@ const OrderPage = () => {
                     setDeliveryDate(date);
                     setDeliveryTime(time);
                 }}
+                refreshKey={refreshKey}
             />
+
+            {/* Уведомление об изменении кол-ва товаров в заказе */}
+            {removedItems.length > 0 && (
+                <NotificationBanner
+                    items={removedItems}
+                    onClose={() => setRemovedItems([])}
+                />
+            )}
 
         </div>
     );
