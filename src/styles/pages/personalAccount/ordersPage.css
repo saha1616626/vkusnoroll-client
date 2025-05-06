@@ -25,20 +25,23 @@
 
 /* Кнопка сортировки */
 .orders-page-sort-btn {
-    width: 176px;
+    width: 185px;
     background: #f8f9fa;
-    border: 1px solid #dfe6e9;
-    border-radius: 8px;
-    padding: 0.8rem 1.5rem;
     display: flex;
     align-items: center;
     gap: 0.8rem;
-    transition: all 0.3s;
     cursor: pointer;
+    border: 2px solid #27ae60;
+    border-radius: 25px;
+    padding: 0.8rem 1.5rem;
+    transition: all 0.3s;
+    color: #27ae60;
 }
 
 .orders-page-sort-btn:hover {
-    background: #f1f3f5;
+    background: #27ae60;
+    color: white;
+    box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2);
 }
 
 /* Иконка сортировки */
@@ -70,12 +73,19 @@
     border-radius: 12px;
     overflow: hidden;
     transition: all 0.3s;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.order-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
 /* Главная (внешняя) часть карточки */
 .order-card-main {
-    padding: 1.5rem;
-    cursor: pointer;
+    display: grid;
+    gap: 1.2rem;
+    padding: 2rem;
 }
 
 /* Заголовок внутри карточки */
@@ -106,7 +116,32 @@
     font-size: 0.9rem;
 }
 
+/* Статус оплаты */
+.payment-status {
+    padding: 0.4rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    width: fit-content;
+}
+
+.paid {
+    background: #e8f6ef;
+    color: #219653;
+}
+
+.unpaid {
+    background: #fee2e2;
+    color: #eb5757;
+}
+
 /* Цветовые обозначения для статусов заказа */
+
+/* Дефолтный стиль для статуса */
+.status-default {
+    background: #f3f4f6;
+    color: #4f4f4f;
+}
+
 .status-created {
     background: #dbeafe;
     color: #1d4ed8;
@@ -152,12 +187,22 @@
     object-fit: cover;
 }
 
+/* Маска номера телефона */
+.phone-masked {
+    background: none;
+    border: none;
+    font-family: inherit;
+    color: inherit;
+}
 
 /* Общая информация по заказу */
 .order-summary {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-between;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
 }
 
 /* Элемент общей информации */
@@ -172,6 +217,25 @@
 .order-summary-item img {
     width: 20px;
     object-fit: cover;
+}
+
+/* Бесплатная доставка */
+.free-delivery {
+    color: #27ae60;
+    /* font-size: 0.9em; */
+    margin-left: 8px;
+}
+
+/* Сумма */
+.cost-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.total-cost {
+    font-weight: 600;
+    margin-top: 0.0rem;
 }
 
 /* Скрытая информация заказа. Список товаров */
