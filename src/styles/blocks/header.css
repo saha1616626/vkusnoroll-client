@@ -1,11 +1,17 @@
 /* Стили для шапки */
 
+/* Переменные */
+:root {
+    --header-height: 75.6px; /* Высота шапки */
+}
+
 /* Основной контейнер шапки */
 .header-header-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 40px;
+    padding: 0px 40px;
+    height: var(--header-height);
     background-color: #C1CFC4;
     color: white;
 }

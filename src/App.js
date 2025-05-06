@@ -27,6 +27,8 @@ import OrdersPage from './components/pages/personalAccount/OrdersPage'; // Ли�
 import AddressesPage from './components/pages/personalAccount/AddressesPage'; // Личный кабиент. Адреса
 import AddressModal from './components/modals/AddressModal'; // Модальное окно  "Адреса доставки"
 import OrderPage from './components/pages/OrderPage'; // Страница оформления заказа
+import OrderSuccessPage from './components/pages/OrderSuccessPage'; // Страница успешного оформления заказа
+import OrderErrorPage from './components/pages/OrderErrorPage'; // Страница неуспешного оформления заказа
 
 
 function App() {
@@ -98,6 +100,8 @@ const AppContent = () => {
           </Route>
           {/* Страница оформления заказа */}
           <Route path="/order" element={<OrderPage />} />
+          <Route path="/order/success" element={<OrderSuccessPage />} />
+          <Route path="/order/error" element={<OrderErrorPage />} />
         </Route>
       </Routes>
       <AddressModal /> {/* Провайдер модального окна "Адреса доставки" */}

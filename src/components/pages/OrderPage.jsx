@@ -501,7 +501,7 @@ const OrderPage = () => {
             endDesiredDeliveryTime: end
         };
 
-        console.log(orderData);
+        // console.log(orderData);
 
         try {
             const response = await api.createOrderClient(orderData);
@@ -511,11 +511,20 @@ const OrderPage = () => {
                     localStorage.removeItem('cart')
                 }
 
-                // navigate('/order-success', { state: { orderId: response.data.orderId } });
+                // Навигация в случае успешного формирования заказа
+                navigate('/order/success', {
+                    state: { orderDetails: { orderNumber: response.data.orderNumber } }
+                });
+
+                loadCart(); // Обновляем содержимое корзины
             }
         } catch (error) {
             console.error('Ошибка создания заказа:', error);
-            alert('Произошла ошибка при оформлении заказа. Попробуйте ещё раз.');
+
+            // Навигация в случае неуспешного формирования заказа. Неуспешная оплата
+            navigate('/order/error', {
+                state: { error: 'Платеж не прошел. Проверьте данные вашей карты' }
+            });
         }
     };
 
@@ -542,17 +551,6 @@ const OrderPage = () => {
      Обработчики событий
     ===========================
     */
-
-    // Ввод номера телефона
-    const handlePhoneChange = (value) => {
-        const cleanedValue = value.replace(/\D/g, ''); // Получаем введенные данные
-        if (cleanedValue.length <= 11) { // Не более 11 символов
-            setFormData(prev => ({
-                ...prev,
-                numberPhone: cleanedValue?.trim() || null
-            }));
-        }
-    };
 
     // Обработчик изменения адреса через модальное окно
     const handleAddressUpdate = () => {
