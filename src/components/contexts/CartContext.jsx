@@ -17,7 +17,8 @@ export const CartProvider = ({ children }) => {
             let items; // Список элементов корзины
             if (localStorage.getItem('authUserToken')) { // Корзина авторизованного пользователя
                 const { data } = await api.getCart(); // Загружаем из БД
-                items = data.items;
+                // Сортируем по ID в обратном порядке (новые сверху)
+                items = data.items.sort((a, b) => b.id - a.id);
             } else { // Корзина неавторизованного пользователя
                 // Получаем RAW данные из localStorage
                 const rawCart = JSON.parse(localStorage.getItem('cart')) || [];

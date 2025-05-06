@@ -10,6 +10,9 @@ import "./../../styles/menus/personalAccountMenu.css";
 import ConfirmationModal from './../modals/ConfirmationModal';
 import { useAuth } from "../contexts/AuthContext"; // Контекст авторизации
 
+// Контекс
+import { useCart } from "../contexts/CartContext"; // Контекст корзины
+
 const PersonalAccountMenu = () => {
 
     /* 
@@ -20,6 +23,7 @@ const PersonalAccountMenu = () => {
 
     const navigate = useNavigate();
     const location = useLocation();
+    const { loadCart } = useCart(); // Состояние из контекста корзины
 
     // Модальное окно подтверждения перехода при наличии несохраненных данных
     const [showNavigationConfirmModal, setShowNavigationConfirmModal] = useState(false); // Отображение модального окна
@@ -79,6 +83,7 @@ const PersonalAccountMenu = () => {
         ['authUserToken', 'clientId']
             .forEach(key => localStorage.removeItem(key));
         updateAuth(false); // Передаем состояние о выходе
+        loadCart(); // Обновляем состав корзины
         navigate('/menu');
 
         // Генерируем кастомное событие для обновления отображения адреса в шапке
