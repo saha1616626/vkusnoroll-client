@@ -77,6 +77,10 @@ const apiMethods = {
     getDeliveryZones: () => api.get('/deliverySettings/delivery-zones'), // Зоны доставки
     getOrderSettings: () => api.get('/deliverySettings/order-settings'), // Получаем все необходимые данные для формирования заказа
 
+    // Заказы
+    getOrdersByIdClient: (id) => api.get(`/orders/client/${id}`), // Список заказов клиента
+    createOrderClient: (data) => api.post('/orders/client', data), // Оформление заказа клиентом 
+
 };
 
 // Экспортируем объект по умолчанию

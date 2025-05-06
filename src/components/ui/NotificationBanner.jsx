@@ -70,9 +70,9 @@ const NotificationBanner = ({ items, onClose }) => {
         const lastTwoDigits = count % 100;
 
         if (lastDigit === 1 && lastTwoDigits !== 11) {
-            return 'не доступен';
+            return 'недоступен';
         } else {
-            return 'не доступны';
+            return 'недоступны';
         }
     }
 

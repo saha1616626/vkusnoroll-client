@@ -332,7 +332,7 @@ const AddressModal = () => {
 
         // Проверяем наличие координат в выбранном адресе
         if (!selectedAddress?.latitude || !selectedAddress?.longitude) {
-            console.error('Выбранный адрес не содержит координат');
+            console.error('Выбранный адрес не содержит координат'); // Данная ошибка может возникать при загрузке страницы, это нормально
             return;
         }
 

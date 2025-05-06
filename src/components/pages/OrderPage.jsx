@@ -59,12 +59,24 @@ const OrderPage = () => {
         isFreeDelivery: false,
         freeThreshold: 0
     });
-    const [deliveryCost, setDeliveryCost] = useState(null); // Стоимость доставки
+
+    const [baseDeliveryCost, setBaseDeliveryCost] = useState(null); // Базовая стоимость (из зоны)
+    const [deliveryCost, setDeliveryCost] = useState(null); // Финальная стоимость (с учетом акций)
     const [freeDeliveryMessage, setFreeDeliveryMessage] = useState(''); // Сообщение о бесплатной доставке или ее условиях
     const [removedItems, setRemovedItems] = useState([]); // Удаленные товары из списка в заказе (Архивные товары или удаленные из БД)
     const [refreshKey, setRefreshKey] = useState(0); // Для принудительного обновления данных на странице по таймеру
 
     const [isCartLoading, setIsCartLoading] = useState(true); // Состояние загрузки корзины
+    const [errors, setErrors] = useState({ // Состояние для хранения ошибок заполнения
+        name: false,
+        phone: false,
+        address: false,
+        datetime: false,
+        payment: false,
+        change: false
+    });
+
+    const [showGeneralError, setShowGeneralError] = useState(false); // Уведомление об ошибке заполнения полей
 
     /* 
     ===========================
@@ -72,6 +84,52 @@ const OrderPage = () => {
     ===========================
     */
 
+    // Устанавливаем персональные данные для авторизованного пользователя. Только при монтировании компонента
+    useEffect(() => {
+        const fetchUserData = async () => {
+            const isAuthorized = !!localStorage.getItem('clientId');
+            if (!isAuthorized) return;
+
+            try {
+                const response = await api.getAccountById(localStorage.getItem('clientId'));
+                const userData = response.data;
+
+                // Создаем объект для обновления данных
+                const updates = {};
+
+                // Проверяем и устанавливаем имя
+                if (userData.name && typeof userData.name === 'string') {
+                    const trimmedName = userData.name.trim();
+                    if (trimmedName.length > 0) {
+                        updates.name = trimmedName;
+                    }
+                }
+
+                // Проверяем и форматируем телефон
+                if (userData.numberPhone && typeof userData.numberPhone === 'string') {
+                    const cleanedPhone = userData.numberPhone.replace(/\D/g, '');
+
+                    // Проверка на 11 цифр и начало с 7
+                    if (cleanedPhone.length === 11 && cleanedPhone.startsWith('7')) {
+                        updates.numberPhone = cleanedPhone;
+                    }
+                }
+
+                // Обновляем состояние только если есть изменения
+                if (Object.keys(updates).length > 0) {
+                    setFormData(prev => ({
+                        ...prev,
+                        ...updates
+                    }));
+                }
+
+            } catch (error) {
+                console.error('Ошибка загрузки данных пользователя:', error);
+            }
+        };
+
+        fetchUserData();
+    }, []);
 
     // Обновление данных на странице по окончании заданного времени
     useEffect(() => {
@@ -101,7 +159,7 @@ const OrderPage = () => {
             } catch (error) {
                 console.error('Ошибка автообновления:', error);
             }
-        }, 10 * 60 * 100); // 5 минут
+        }, 5 * 60 * 1000); // 5 минут
 
         return () => clearInterval(interval);
     }, []); // Очищаем при размонтировании
@@ -144,15 +202,12 @@ const OrderPage = () => {
     useEffect(() => {
         if (isCartLoading) return; // Если корзина еще не загружена
 
-        const validItems = []; // Валидные товары из корзины
-
-        for (const item of cartItems) {
-            if (!item.isArchived) validItems.push(item);
-        }
+        const validItems = cartItems.filter(item => !item.isArchived); // Валидные товары из корзины
 
         if (cartItems.length === 0 || validItems.length === 0) {
             navigate('/menu');
         }
+
     }, [cartItems]); // eslint-disable-line react-hooks/exhaustive-deps 
 
     // Получаем и устанавливаем расписание работы доставки
@@ -193,13 +248,13 @@ const OrderPage = () => {
                     serverTime // Время в формате ISO
                 } = response.data;
 
-                setDeliveryInterval(interval); // Интервал доставки
-                setCurrentServerTime(new Date(serverTime)); // Устанавливаем текущее время по Москве из БД
                 setOrderSettings({ // Получаем детали стоимости доставки
                     defaultPrice: defaultPrice || 0,
                     isFreeDelivery: Boolean(isFreeDelivery),
                     freeThreshold: Math.max(Number(freeThreshold) || 0, 0)
                 });
+                setDeliveryInterval(interval); // Интервал доставки
+                setCurrentServerTime(new Date(serverTime)); // Устанавливаем текущее время по Москве из БД
             } catch (error) {
                 console.error('Ошибка загрузки настроек заказа:', error);
             }
@@ -295,8 +350,13 @@ const OrderPage = () => {
                     }
                 }
 
+                const baseCost = isValid ?
+                    matchedZone?.price ?? orderSettings.defaultPrice :
+                    orderSettings.defaultPrice;
+
+                // Обновляем только базовую стоимость
+                setBaseDeliveryCost(baseCost);
                 setIsAddressValid(isValid);
-                setDeliveryCost(isValid ? matchedZone?.price ?? orderSettings.defaultPrice : null); // Стоимость доставки для принадлежащей зоны
             } catch (error) {
                 console.error('Ошибка валидации:', error);
                 setIsAddressValid(false);
@@ -312,25 +372,42 @@ const OrderPage = () => {
 
     // Расчет итоговой стоимости доставки и информирование пользователя сообщением
     useEffect(() => {
-        const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-        const delivery = deliveryCost ?? 0;
+        if (!orderSettings.freeThreshold && orderSettings.freeThreshold !== 0) return;
 
-        let finalDeliveryCost = delivery;
+        const subtotal = cartItems
+            .filter(item => !item.isArchived)
+            .reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+        // Базовая стоимость берется из отдельного состояния
+        const baseCost = isAddressValid ? baseDeliveryCost : orderSettings.defaultPrice;
+
+        let finalCost = baseCost;
         let message = '';
 
-        if (orderSettings.isFreeDelivery && orderSettings.freeThreshold > 0) {
+        if (orderSettings.isFreeDelivery) {
             if (subtotal >= orderSettings.freeThreshold) {
-                finalDeliveryCost = 0;
+                finalCost = 0;
                 message = 'Бесплатная доставка!';
             } else {
                 const remaining = orderSettings.freeThreshold - subtotal;
                 message = `До бесплатной доставки осталось ${remaining}₽`;
+                finalCost = baseCost; // Используем актуальную базовую стоимость
             }
         }
 
-        setDeliveryCost(finalDeliveryCost);
+        setDeliveryCost(finalCost);
         setFreeDeliveryMessage(message);
-    }, [cartItems, deliveryCost, orderSettings]);
+    }, [cartItems, orderSettings, isAddressValid, baseDeliveryCost]);
+
+    // Исчезновение уведомления об ошибке заполнения полей
+    useEffect(() => {
+        if (showGeneralError) {
+            const timer = setTimeout(() => {
+                setShowGeneralError(false);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [showGeneralError]);
 
     /* 
     ===========================
@@ -338,10 +415,127 @@ const OrderPage = () => {
     ===========================
     */
 
-    // Сумма заказа (хардкод. Тест)
-    const total = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0) + 120;
+    // Сумма заказа
+    const total = cartItems
+        .filter(item => !item.isArchived)
+        .reduce((sum, item) => sum + item.price * item.quantity, 0) +
+        (isAddressValid ? deliveryCost : 0);
 
-    // TODO - Если нет валидных товаров в корзине, то авто переход назад
+    // Формирование заказа
+    const handleSubmitOrder = async () => {
+        // Проверка обязательных полей
+        if (!validateForm()) return;
+
+        // Формируем массив товаров
+        const orderItems = cartItems
+            .filter(item => !item.isArchived)
+            .map(item => ({
+                dishId: item.id, // предполагая что id товара хранится в item.id
+                quantityOrder: item.quantity,
+                pricePerUnit: item.price
+            }))
+
+        // Проверка наличия товаров
+        if (orderItems.length === 0) {
+            alert('Список товаров пуст!');
+            return;
+        }
+
+        // Форматирование времени доставки
+        const formatDateTime = (dateString, timeString) => {
+            // Парсим дату из строки формата "YYYY-MM-DD"
+            const [year, month, day] = dateString.split('-').map(Number);
+            const date = new Date(year, month - 1, day); // Месяцы в JS: 0-11
+
+            // Разделяем время на начало и конец, учитывая разные типы тире
+            const [start, end] = timeString.split(/[—\-]/).map(t => t.trim());
+
+            // Форматируем время для start и end
+            const formatTime = (time) => {
+                const [hours, minutes] = time.split(':').map(Number);
+                return `${String(hours).padStart(2, '0')}:${String(minutes || '00').padStart(2, '0')}`;
+            };
+
+            // Форматируем дату в ISO-подобный формат
+            const isoDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+            return {
+                start: `${isoDate} ${formatTime(start)}`,
+                end: `${isoDate} ${formatTime(end)}`
+            };
+        };
+
+        const { start, end } = formatDateTime(deliveryDate, deliveryTime); // Начальная и конечные дата и время доставки
+
+        // Сбор данных для отправки
+        const orderData = {
+            accountId: localStorage.getItem('clientId') || null,
+            address: {
+                city: selectedAddress.city,
+                street: selectedAddress.street,
+                house: selectedAddress.house,
+                apartment: selectedAddress.apartment || null,
+                entrance: selectedAddress.entrance || null,
+                floor: selectedAddress.floor || null,
+                comment: selectedAddress.comment || null,
+                isPrivateHome: selectedAddress.isPrivateHome,
+                coordinates: selectedAddress.coordinates || [
+                    parseFloat(selectedAddress.latitude),
+                    parseFloat(selectedAddress.longitude)
+                ]
+            },
+            items: orderItems,
+            shippingCost: deliveryCost,
+            goodsCost: cartItems
+                .filter(item => !item.isArchived)
+                .reduce((sum, item) => sum + item.price * item.quantity, 0),
+            paymentMethod,
+            isPaymentStatus: paymentMethod === 'Онлайн',
+            prepareChangeMoney: paymentMethod === 'Наличные' && changeAmount
+                ? Number(changeAmount)
+                : null,
+            commentFromClient: document.querySelector('.order-page-comment')?.value || '',
+            nameClient: formData.name.trim(),
+            numberPhoneClient: formData.numberPhone.replace(/\D/g, ''),
+            startDesiredDeliveryTime: start,
+            endDesiredDeliveryTime: end
+        };
+
+        console.log(orderData);
+
+        try {
+            const response = await api.createOrderClient(orderData);
+            if (response.data.success) {
+                // Если пользователь не авторизован, то удаляем его корзину после успешного создания заказа
+                if (!localStorage.getItem('clientId')) {
+                    localStorage.removeItem('cart')
+                }
+
+                // navigate('/order-success', { state: { orderId: response.data.orderId } });
+            }
+        } catch (error) {
+            console.error('Ошибка создания заказа:', error);
+            alert('Произошла ошибка при оформлении заказа. Попробуйте ещё раз.');
+        }
+    };
+
+    // Валидация полей
+    const validateForm = () => {
+        const newErrors = {
+            name: !formData.name.trim(),
+            phone: formData.numberPhone.replace(/\D/g, '').length !== 11,
+            address: !selectedAddress || !isAddressValid,
+            datetime: !deliveryDate || !deliveryTime,
+            payment: !paymentMethod,
+            change: paymentMethod === 'Наличные' && changeAmount && Number(changeAmount) < total
+        };
+
+        const hasErrors = Object.values(newErrors).some(e => e);
+        setShowGeneralError(hasErrors); // Уведомление об ошибке заполнения
+        setErrors(newErrors);
+
+        return !hasErrors;
+    };
 
     /* 
     ===========================
@@ -396,10 +590,11 @@ const OrderPage = () => {
                                     type="text"
                                     placeholder=""
                                     maxLength={50}
-                                    className="order-page-input"
+                                    className={`order-page-input ${errors.name ? 'input-error' : ''}`}
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 />
+                                {errors.name && <span className="error-message">Введите ваше имя</span>}
                             </div>
 
                             <div className="order-page-input-group">
@@ -408,9 +603,10 @@ const OrderPage = () => {
                                     mask="+7(000)000-00-00"
                                     value={formData.numberPhone}
                                     onAccept={(value) => setFormData({ ...formData, numberPhone: value })}
-                                    className="order-page-input"
+                                    className={`order-page-input ${errors.phone ? 'input-error' : ''}`}
                                     placeholder="+7(___) ___-__-__"
                                 />
+                                {errors.phone && <span className="error-message">Введите корректный номер телефона</span>}
                             </div>
                         </div>
                     </section>
@@ -462,6 +658,9 @@ const OrderPage = () => {
                                         + Добавить адрес доставки
                                     </button>
                                 )}
+                                {!selectedAddress && errors.address && (
+                                    <span className="error-message">Выберите адрес доставки</span>
+                                )}
                             </div>
 
                             {/* Блок даты и времени */}
@@ -478,6 +677,9 @@ const OrderPage = () => {
                                             : "Выбрать дату и время"}
                                     </button>
                                 </div>
+                                {errors.datetime && (
+                                    <span className="error-message">Выберите дату и время доставки</span>
+                                )}
                             </div>
                         </div>
                     </section>
@@ -518,13 +720,16 @@ const OrderPage = () => {
                                             </div>
                                             {changeAmount && changeAmount < total && (
                                                 <p className="order-page-error">
-                                                    Сумма должна быть не меньше {total}₽
+                                                    Сумма должна быть не меньше {total}₽ или оставьте поле пустым
                                                 </p>
                                             )}
                                         </div>
                                     )}
                                 </div>
                             ))}
+                            {errors.payment && (
+                                <span className="error-message">Выберите способ оплаты</span>
+                            )}
                         </div>
                     </section>
 
@@ -532,6 +737,7 @@ const OrderPage = () => {
                     <section className="order-page-section">
                         <h2 className="order-page-subtitle">Комментарий</h2>
                         <textarea
+                            maxLength={500}
                             className="order-page-comment"
                             placeholder="Дополнительные пожелания..."
                         />
@@ -544,12 +750,14 @@ const OrderPage = () => {
                     <section className="order-page-section">
                         <h2 className="order-page-subtitle">Детали заказа</h2>
                         <div className="order-page-items-list">
-                            {cartItems.map(item => (
-                                <div key={item.id} className="order-page-item">
-                                    <span>{item.name}</span>
-                                    <span>{item.quantity} x {item.price} ₽</span>
-                                </div>
-                            ))}
+                            {cartItems
+                                .filter(item => !item.isArchived)
+                                .map(item => (
+                                    <div key={item.id} className="order-page-item">
+                                        <span>{item.name}</span>
+                                        <span>{item.quantity} x {item.price} ₽</span>
+                                    </div>
+                                ))}
                         </div>
 
                         <div className="order-page-divider" />
@@ -560,11 +768,11 @@ const OrderPage = () => {
                                 <div
                                     className={`delivery-message ${deliveryCost === 0 ? 'free' : 'info'}`}
                                     // Скрываем сообщение о бесплатной доставке
-                                    style={{ display: deliveryCost === 0 ? 'none' : '' }}>
+                                    style={{ display: deliveryCost === 0 || !isAddressValid ? 'none' : '' }}>
                                     {freeDeliveryMessage}
                                 </div>
                             )}
-                            
+
                             <div className="order-page-summary-row">
                                 <span>Доставка:</span>
                                 {!isAddressValid ? (
@@ -579,12 +787,18 @@ const OrderPage = () => {
                             <div className="order-page-summary-row">
                                 <span>Итого:</span>
                                 <span className="order-page-total">
-                                    {cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0) + (isAddressValid ? deliveryCost : 0)} ₽
+                                    {cartItems
+                                        .filter(item => !item.isArchived)
+                                        .reduce((sum, item) => sum + item.price * item.quantity, 0) +
+                                        (isAddressValid ? deliveryCost : 0)} ₽
                                 </span>
                             </div>
                         </div>
 
-                        <button className="order-page-submit-button">
+                        <button
+                            className="order-page-submit-button"
+                            onClick={handleSubmitOrder}
+                        >
                             Подтвердить заказ
                         </button>
                     </section>
@@ -614,6 +828,13 @@ const OrderPage = () => {
                     items={removedItems}
                     onClose={() => setRemovedItems([])}
                 />
+            )}
+
+            {/* Уведомление об ошибке */}
+            {showGeneralError && (
+                <div className="order-floating-error">
+                    Обнаружены ошибки заполнения
+                </div>
             )}
 
         </div>
