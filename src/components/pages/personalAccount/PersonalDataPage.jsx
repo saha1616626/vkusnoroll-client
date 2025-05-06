@@ -21,12 +21,16 @@ const PersonalDataPage = () => {
     */
 
     const [formData, setFormData] = useState({ // Данные полей
-        name: null,
-        numberPhone: null,
-        email: null
+        name: '',
+        numberPhone: '',
+        email: ''
     });
 
-    const [initialData, setInitialData] = useState({}); // Начальны данные
+    const [initialData, setInitialData] = useState({
+        name: '',
+        numberPhone: '',
+        email: ''
+    }); // Начальны данные
     const [isDirty, setIsDirty] = useState(false); // Отслеживание несохраненных данных (чтобы не обращаться к сервреу просто так)
     const { addNotification } = useNotification(); // Отображение уведомлений
 
@@ -56,11 +60,17 @@ const PersonalDataPage = () => {
             try {
                 const clientId = localStorage.getItem('clientId');
                 const response = await api.getAccountById(clientId); // Получаем данные авторизованного пользователя
-                setInitialData(response.data); // Сохраняем начальные данные
+                setInitialData(response.data);
+                setInitialData({ // Сохраняем начальные данные
+                    id: response.data.id,
+                    name: response.data.name || '',
+                    numberPhone: response.data.numberPhone || '',
+                    email: response.data.email || ''
+                });
                 setFormData({
-                    name: response.data.name || null,
-                    numberPhone: response.data.numberPhone || null,
-                    email: response.data.email || null
+                    name: response.data.name || '',
+                    numberPhone: response.data.numberPhone || '',
+                    email: response.data.email || ''
                 });
             } catch (error) {
                 console.error('Data upload error:', error);
@@ -83,7 +93,7 @@ const PersonalDataPage = () => {
     // Изменение значения в поле "Имя"
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value || null }));
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     // Ввод номера телефона
@@ -92,7 +102,7 @@ const PersonalDataPage = () => {
         if (cleanedValue.length <= 11) { // Не более 11 символов
             setFormData(prev => ({
                 ...prev,
-                numberPhone: cleanedValue?.trim() || null
+                numberPhone: cleanedValue
             }));
         }
     };
@@ -101,7 +111,7 @@ const PersonalDataPage = () => {
     const handleClearField = (field) => {
         setFormData(prev => ({
             ...prev,
-            [field]: null // TODO не изменяет isDirty
+            [field]: '' // TODO не изменяет isDirty
         }));
     };
 
@@ -111,10 +121,10 @@ const PersonalDataPage = () => {
         try {
 
             // Валидация номера телефона перед отправкой
-            const phone = formData.numberPhone?.replace(/\D/g, null) || null;
+            const phone = formData.numberPhone?.replace(/\D/g, '');
             let isPhoneValid = true; // Номер телефона корректный
 
-            if (phone !== null && phone.length !== 11) {
+            if (phone && phone.length !== 11) {
                 isPhoneValid = false;
                 // Отображаем ошибку
                 addNotification('Номер телефона некорректный');
@@ -128,16 +138,9 @@ const PersonalDataPage = () => {
 
             // Формируем объект для отправки
             const updatedData = {
-                name: formData.name?.trim() || null
+                name: formData.name.trim() || null,
+                numberPhone: isPhoneValid ? phone : initialData.numberPhone.trim() || null
             };
-
-            // Добавляем телефон только если он валиден
-            if (isPhoneValid) {
-                updatedData.numberPhone = phone;
-            }
-            else { // Добавляем старый телефон, чтобы не установилось null
-                updatedData.numberPhone = initialData.numberPhone;
-            }
 
             // Отправка данных на сервер
             const response = await api.updateAccount(initialData.id, updatedData);
@@ -145,7 +148,10 @@ const PersonalDataPage = () => {
             // Обновляем начальные данные из ответа сервера
             setInitialData(prev => ({
                 ...prev,
-                ...response.data
+                ...response.data,
+                // Если объект вернулся как null, то заменяем на "", чтобы соответствовать настройке полей
+                name: response.data.name == null ? '' : response.data.name,
+                numberPhone: response.data.numberPhone == null ? '' : response.data.numberPhone
             }));
 
         } catch (error) {
@@ -182,7 +188,7 @@ const PersonalDataPage = () => {
                             type="text"
                             className="personal-data-page-input"
                             name="name"
-                            value={formData.name || ''}
+                            value={formData.name}
                             onChange={handleInputChange}
                         />
                         {formData.name && (
