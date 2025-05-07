@@ -26,8 +26,8 @@ const PersonalAccountMenu = () => {
     const { loadCart } = useCart(); // Состояние из контекста корзины
 
     // Модальное окно подтверждения перехода при наличии несохраненных данных
-    const [showNavigationConfirmModal, setShowNavigationConfirmModal] = useState(false); // Отображение модального окна
-    const [pendingNavigation, setPendingNavigation] = useState(null); // Подтверждение навигации в модальном окне
+    // const [showNavigationConfirmModal, setShowNavigationConfirmModal] = useState(false); // Отображение модального окна
+    // const [pendingNavigation, setPendingNavigation] = useState(null); // Подтверждение навигации в модальном окне
 
     // Модальное окно выхода из учетной записи
     const [showExitConfirmModal, setShowExitConfirmModal] = useState(false); // Отображение модального окна
@@ -99,9 +99,9 @@ const PersonalAccountMenu = () => {
         };
 
         // Проверка на несохраненные изменения
-        if (localStorage.getItem('isDirty') === 'true') { // На false isDirty при выходе без сохранения менять не нужно, так как компонент размонтируется и удалит состоние isDirty в localStorage
-            setPendingNavigation(() => checkNavigation);
-            setShowNavigationConfirmModal(true);
+        if (sessionStorage.getItem('isDirty') === 'true') { // На false isDirty при выходе без сохранения менять не нужно, так как компонент размонтируется и удалит состоние isDirty в localStorage
+            // setPendingNavigation(() => checkNavigation);
+            // setShowNavigationConfirmModal(true);
         } else {
             checkNavigation();
         }

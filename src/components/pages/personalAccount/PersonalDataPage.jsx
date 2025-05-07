@@ -1,6 +1,5 @@
 // Личный кабинет. Страница "Личные данные"
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { IMaskInput } from 'react-imask'; // Создание маски на номер телефона
 import api from '../../../utils/api';  // API сервера
 import { useNotification } from "../../contexts/NotificationContext"; // Контекст Уведомления
@@ -10,7 +9,6 @@ import "../../../styles/pages/personalAccount/personalDataPage.css";
 
 // Импорт иконок
 import questionIcon from './../../../assets/icons/question.png'
-import crossIcon from './../../../assets/icons/cross.png'
 
 const PersonalDataPage = () => {
 

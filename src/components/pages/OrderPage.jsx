@@ -1,6 +1,6 @@
 // Страница оформления заказа
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IMaskInput } from 'react-imask'; // Создание маски на номер телефона
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -448,7 +448,7 @@ const OrderPage = () => {
             const date = new Date(year, month - 1, day); // Месяцы в JS: 0-11
 
             // Разделяем время на начало и конец, учитывая разные типы тире
-            const [start, end] = timeString.split(/[—\-]/).map(t => t.trim());
+            const [start, end] = timeString.split(/[—-]/).map(t => t.trim());
 
             // Форматируем время для start и end
             const formatTime = (time) => {
