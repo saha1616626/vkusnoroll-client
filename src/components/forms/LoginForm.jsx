@@ -28,8 +28,11 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState(''); // Повторный пароль
     const [error, setError] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
+    const [showPassword, setShowPassword] = useState(true);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(true);
+    const [isRegisterMode, setIsRegisterMode] = useState(false); // Режим регистрации
 
     const navigate = useNavigate();
     const modalRef = useRef(null); // Ссылка на форму
@@ -39,14 +42,6 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
      Эффекты
     ===========================
     */
-
-    // Авто перенаправление пользвоателя после авторизации
-    useEffect(() => {
-        const token = localStorage.getItem('authUserToken');
-        if (isTokenValid(token)) { // Если токен валидный
-            // TODO Если пользователь находится на главной странице, то перенаправляем его в личный кабинет. Если пользователь оформлял заказ, то просто скрываем окно авторизации.
-        }
-    }, [navigate]);
 
     // Обработчик клика вне модального окна
     useEffect(() => {
@@ -66,6 +61,13 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
         return () => document.body.classList.remove('no-scroll');
     }, [onClose]);
 
+    // Сброс полей формы при переключении режима работы окна
+    useEffect(() => {
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+    }, [isRegisterMode]);
+
     /* 
     ===========================
      Обработчики событий
@@ -76,17 +78,29 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await api.login({ email, password });
-            // Сохраняем токен из куки (сервер уже установил его)
-            localStorage.setItem('authUserToken', response.data.token);
-            localStorage.setItem('clientId', response.data.userId)
-            onLoginSuccess(); // Вызов колбэка успешной авторизации
-            loadCart(); // Обновляем состав корзины при входе в учетную запись
+            if (isRegisterMode && password !== confirmPassword) {
+                setError('Пароли не совпадают');
+                return;
+            }
 
-            // Генерируем кастомное событие для обновления отображения адреса в шапке
-            window.dispatchEvent(new Event('address-updated'));
+            const response = isRegisterMode
+                ? await api.register({ email, password })
+                : await api.login({ email, password });
+
+            if (!isRegisterMode) {
+                // Сохраняем токен из куки (сервер уже установил его)
+                localStorage.setItem('authUserToken', response.data.token);
+                localStorage.setItem('clientId', response.data.userId)
+                onLoginSuccess(); // Вызов колбэка успешной авторизации
+                loadCart(); // Обновляем состав корзины при входе в учетную запись
+                // Генерируем кастомное событие для обновления отображения адреса в шапке
+                window.dispatchEvent(new Event('address-updated'));
+            } else {
+                setIsRegisterMode(false); // Переключаем обратно на вход после регистрации
+                setError('Регистрация успешна! Войдите в аккаунт');
+            }
         } catch (err) {
-            setError('Неверный email или пароль');
+            setError(err.response.data.error); // Вывод ошибки
         }
     };
 
@@ -97,25 +111,27 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
     */
 
     return (
-        <div className="auth-overlay">
-            <div className="auth-form-container" ref={modalRef}>
+        <div className="login-form-overlay">
+            <div className="login-form-container" ref={modalRef}>
                 <button
                     onClick={onClose}
-                    className="auth-close-button"
+                    className="login-form-close-button"
                     aria-label="Закрыть форму"
                 >
                     <img src={crossIcon} alt="Cross" />
                 </button>
 
-                <form onSubmit={handleSubmit} className="auth-form">
-                    <h2 className="auth-form-title">Вход</h2>
+                <form onSubmit={handleSubmit} className="login-form">
+                    <h2 className="login-form-title">
+                        {isRegisterMode ? 'Регистрация' : 'Вход'}
+                    </h2>
 
-                    {error && <div className="auth-form-error">{error}</div>}
+                    {error && <div className="login-form-error">{error}</div>}
 
-                    <div className="auth-input-group">
+                    {/* Поле Email */}
+                    <div className="login-input-group">
                         <input
                             type="email"
-                            maxLength={30}
                             placeholder="Email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -123,11 +139,11 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                         />
                     </div>
 
-                    <div className="auth-input-group">
-                        <div className="auth-password-wrapper">
+                    {/* Поле Пароль */}
+                    <div className="login-input-group">
+                        <div className="login-password-wrapper">
                             <input
                                 type={showPassword ? 'text' : 'password'}
-                                maxLength={100}
                                 placeholder="Пароль"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
@@ -135,29 +151,63 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                             />
                             <button
                                 type="button"
-                                className="auth-toggle-password"
+                                className="login-toggle-password"
                                 onClick={() => setShowPassword(!showPassword)}
                             >
-                                <img src={showPassword ? hiddenEyeIcon : eyeIcon} alt="Eye" className="auth-show-password-icon-button" />
+                                <img src={showPassword ? hiddenEyeIcon : eyeIcon} alt="Eye" />
                             </button>
                         </div>
                     </div>
 
-                    <button type="submit" className="auth-submit-button">
-                        Войти
+                    {/* Поле Повтор пароля (только для регистрации) */}
+                    {isRegisterMode && (
+                        <div className="login-input-group">
+                            <div className="login-password-wrapper">
+                                <input
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    placeholder="Пароль"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    className="login-toggle-password"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                >
+                                    <img src={showConfirmPassword ? hiddenEyeIcon : eyeIcon} alt="Eye" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <button type="submit" className="login-submit-button">
+                        {isRegisterMode ? 'Зарегистрироваться' : 'Войти'}
                     </button>
 
-                    <div className="auth-form-footer">
-                        <a href="/forgot-password" className="auth-link">
-                            Забыли пароль?
-                        </a>
-                        <button
-                            type="button"
-                            className="auth-link auth-register-button"
-                            onClick={() => navigate('/register')}
-                        >
-                            Регистрация
-                        </button>
+                    <div className="login-form-footer">
+                        {!isRegisterMode ? (
+                            <>
+                                <a href="/forgot-password" className="login-link">
+                                    Забыли пароль?
+                                </a>
+                                <button
+                                    type="button"
+                                    className="login-link"
+                                    onClick={() => setIsRegisterMode(true)}
+                                >
+                                    Регистрация
+                                </button>
+                            </>
+                        ) : (
+                            <button
+                                type="button"
+                                className="login-link"
+                                onClick={() => setIsRegisterMode(false)}
+                            >
+                                Назад к входу
+                            </button>
+                        )}
                     </div>
 
                 </form>

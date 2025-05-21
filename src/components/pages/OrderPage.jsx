@@ -61,7 +61,7 @@ const OrderPage = () => {
     });
 
     const [baseDeliveryCost, setBaseDeliveryCost] = useState(null); // Базовая стоимость (из зоны)
-    const [deliveryCost, setDeliveryCost] = useState(null); // Финальная стоимость (с учетом акций)
+    const [deliveryCost, setDeliveryCost] = useState(null); // Стоимость доставки
     const [freeDeliveryMessage, setFreeDeliveryMessage] = useState(''); // Сообщение о бесплатной доставке или ее условиях
     const [removedItems, setRemovedItems] = useState([]); // Удаленные товары из списка в заказе (Архивные товары или удаленные из БД)
     const [refreshKey, setRefreshKey] = useState(0); // Для принудительного обновления данных на странице по таймеру

@@ -9,7 +9,7 @@ const api = axios.create({
     }
 });
 
-// Интерсепторы Axios
+// Интерцепторы Axios
 
 // Автоматическая отправка токена авторизации в заголовки каждого исходящего HTTP-запроса
 api.interceptors.request.use((config) => {

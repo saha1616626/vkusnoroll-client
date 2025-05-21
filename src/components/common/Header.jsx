@@ -38,7 +38,7 @@ const Header = () => {
     const [pendingNavigation, setPendingNavigation] = useState(null); // Подтверждение навигации без сохранения
 
     const { updateAuth } = useAuth(); // Состояния из контекста авторизации
-    const { totalItems, isCartOpen, toggleCart } = useCart(); // Состояние из контекста корзины
+    const { totalItems, isCartOpen, toggleCart, loadCart } = useCart(); // Состояния из контекста корзины
     const { openModal, isOpen } = useAddressModal(); // Состояние для модального окна "Адреса доставки"
 
     const [deliveryTime, setDeliveryTime] = useState({ time: null, isWorking: false, nextWorkDate: null, nextStartTime: null }); // Время работы ресторана
@@ -49,6 +49,49 @@ const Header = () => {
      Эффекты
     ===========================
     */
+
+    // Каждые 5 минут или при перезагрузке проверяем данные пользователя. Обновляем данные, проверяем ограничения
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const userId = localStorage.getItem('clientId');
+
+                // Если пользователь не авторизован — пропускаем
+                if (!userId) {
+                    return;
+                }
+
+                // Запрос актуальных данных пользователя
+                const response = await api.getAccountById(userId);
+
+                // Проверка блокировки аккаунта и подтверждения email
+                if (response.data.isAccountTermination || !response.data.isEmailConfirmed) {
+                    updateAuth(false); // Синхронизируем контекст
+                    loadCart(); // Обновляем состав корзины при выходе из учетной записи (автоматически при окончании жизни токена или ручной выход)
+                    // Генерируем кастомное событие для обновления отображения адреса в шапке
+                    window.dispatchEvent(new Event('address-updated'));
+
+                    // Редирект только если не на целевой странице
+                    if (location.pathname !== '/menu') {
+                        navigate('/menu', { replace: true });
+                    }
+                }
+            } catch (error) {
+                console.error('Ошибка при обновлении данных пользователя:', error);
+            }
+        };
+
+        // Первый запрос при монтировании
+        fetchUserData();
+
+        // Периодическая синхронизация
+        const syncInterval = setInterval(fetchUserData, 300000); // 5 минут
+
+        // Очистка при размонтировании компонента
+        return () => {
+            clearInterval(syncInterval);
+        };
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps 
 
     // Инициализация при рендере компонента
     useEffect(() => {
@@ -116,7 +159,7 @@ const Header = () => {
 
                 loadAddress();
             } else {  // Гость
-   
+
                 // Получаем адреса из localStorage и парсим их
                 const guestAddresses = JSON.parse(localStorage.getItem('guestAddresses'));
 
@@ -212,7 +255,7 @@ const Header = () => {
         };
 
         // Проверка на несохраненные изменения
-        if (localStorage.getItem('isDirty') === 'true') { // На false isDirty при выходе без сохранения менять не нужно, так как компонент размонтируется и удалит состоние isDirty в localStorage
+        if (sessionStorage.getItem('isDirty') === 'true') { // На false isDirty при выходе без сохранения менять не нужно, так как компонент размонтируется и удалит состоние isDirty в localStorage
             setPendingNavigation(() => checkNavigation);
             setShowNavigationConfirmModal(true);
         } else {

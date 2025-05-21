@@ -308,7 +308,7 @@ body.no-scroll {
     box-shadow: 0 0 0 2px rgba(116, 185, 255, 0.2);
 }
 
-/* Дополнительные поля адресе */
+/* Дополнительные поля адреса */
 .address-modal-extra-fields {
     margin-top: 0px;
     display: flex;

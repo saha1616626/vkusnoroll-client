@@ -5,8 +5,8 @@ body.no-scroll {
     overflow: hidden;
 }
 
-/* Фон */
-.auth-overlay {
+/* Основной оверлей */
+.login-form-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -19,19 +19,27 @@ body.no-scroll {
     z-index: 1000;
 }
 
-/* Форма */
-.auth-form-container {
+/* Контейнер формы */
+.login-form-container {
     background: white;
     padding: 40px;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     position: relative;
     width: 100%;
     max-width: 400px;
 }
 
+/* Заголовок формы */
+.login-form-title {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 24px;
+    color: #333;
+}
+
 /* Крестик закрыть форму */
-.auth-close-button {
+.login-form-close-button {
     position: absolute;
     top: 12px;
     right: 25px;
@@ -43,34 +51,28 @@ body.no-scroll {
     transition: color 0.3s;
 }
 
-.auth-close-button img {
+.login-form-close-button img {
     opacity: 0.8;
     width: 15px;
     height: 15px;
-    object-fit: contain; /* Пропорция формы */
+    object-fit: contain;
+    /* Пропорция формы */
 }
 
-.auth-close-button img:hover {
+.login-form-close-button img:hover {
     opacity: 0.5;
 }
 
-.auth-close-button:hover {
+.login-form-close-button:hover {
     color: #333;
 }
 
-.auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+/* Группа полей ввода */
+.login-input-group {
+    margin-bottom: 15px;
 }
 
-/* Заголовок формы */
-.auth-form-title {
-    text-align: center;
-    margin-bottom: 10px;
-}
-
-.auth-input-group input {
+.login-input-group input {
     width: calc(100% - 32px);
     padding: 12px 15px;
     border: 1px solid #ddd;
@@ -78,11 +80,28 @@ body.no-scroll {
     font-size: 16px;
 }
 
-.auth-password-wrapper {
+/* Обертка для поля пароля */
+.login-password-wrapper {
     position: relative;
 }
 
-.auth-toggle-password {
+/* Скрытие браузерных кнопок показа пароля */
+.login-password-wrapper input[type="password"]::-webkit-credentials-auto-fill-button,
+.login-password-wrapper input[type="password"]::-webkit-contacts-auto-fill-button,
+.login-password-wrapper input[type="password"]::-ms-reveal,
+.login-password-wrapper input[type="password"]::-moz-reveal-password {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Кнопка показа пароля */
+.login-toggle-password {
     position: absolute;
     right: 10px;
     top: 50%;
@@ -90,46 +109,49 @@ body.no-scroll {
     background: none;
     border: none;
     cursor: pointer;
-    font-size: 18px;
 }
 
 /* Кнопка иконка отображения пароля */
-.auth-show-password-icon-button {
+.login-toggle-password img {
     margin-top: 5px;
     margin-left: -10px;
     margin-right: 13px;
     width: 21px;
     height: 21px;
-    object-fit: contain; /* Пропорция формы */
+    object-fit: contain;
+    /* Пропорция формы */
 }
 
-.auth-form-footer {
+/* Блок с ссылками */
+.login-form-footer {
+    margin-top: 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-top: 10px;
 }
 
-/* Кнопки "Забыли пароль?" и "Регистрация" */
-.auth-link {
-    color: #3498db;
-    text-decoration: none;
-    font-size: 14px;
-}
-
-.auth-register-button {
+/* Стили для ссылок */
+.login-link {
     background: none;
     border: none;
-    padding: 0;
+    color: #3498db;
     cursor: pointer;
+    font-size: 14px;
+    padding: 5px;
+    text-decoration: none;
 }
 
-/* Кнопка войти */
-.auth-submit-button {
+.login-link:hover {
+    text-decoration: underline;
+}
+
+/* Кнопка подтверждения */
+.login-submit-button {
     margin-top: 10px;
-    background-color: #4CAF50;
+    width: 100%;
+    padding: 14px;
+    background: #4CAF50;
     color: white;
-    padding: 12px;
     border: none;
     border-radius: 6px;
     font-size: 16px;
@@ -137,17 +159,17 @@ body.no-scroll {
     transition: background 0.3s;
 }
 
-.auth-submit-button:hover {
-    background: #2b962e;
+.login-submit-button:hover {
+    background: #45a049;
 }
 
 /* Сообщение об ошибке */
-.auth-form-error {
+.login-form-error {
     color: #e74c3c;
     background: #f8d7da;
-    padding: 10px;
-    border-radius: 8px;
-    font-size: 14px;
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 15px;
     text-align: center;
-    border: 1px solid #ffbaba;
+    border: 1px solid #f5c6cb;
 }
