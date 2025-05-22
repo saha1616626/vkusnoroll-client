@@ -138,11 +138,22 @@ const Header = () => {
                 const loadAddress = async () => {
                     try {
                         if (!savedAddressId) { // Если адрес не обнаружен или хранилище с данным объектом удалено
-                            setCurrentAddress('');
+
+                            // Получаем первый доступный сохраненный адрес пользователя
+                            const response = await api.getFirstAvailableSavedClientAddress(localStorage.getItem('clientId'));
+                            const address = response?.data[0] || null;
+
+                            if (address) {
+                                setCurrentAddress(`${address.city}, ${address.street} ${address.house}`);
+                            }
+                            else {
+                                setCurrentAddress('');
+                            }
+                            
                             return;
                         }
 
-                        // Добавляем новый метод в API для получения адреса по ID
+                        // Получаем адреса по ID пользователя
                         const response = await api.getDeliveryAddressById(savedAddressId);
                         const address = response?.data[0] || null;
 

@@ -25,8 +25,8 @@ api.interceptors.response.use(
     response => response, // Если запрос успешный (т.е. сервер вернул ответ с кодом состояния 2xx), то просто возвращаем ответ
     error => {
         if (error.response?.status === 401) { // Токен недействителен или отсутствует
-            // Токен, роль, id и имя удаляется из локального хранилища
-            ['authUserToken', 'clientId']
+            // Токен, id пользователя и выбранный адрес удаляются из локального хранилища
+            ['authUserToken', 'clientId', 'SelectedDefaultAddressIdAuthorizedUser']
                 .forEach(key => localStorage.removeItem(key));
             // window.location.href = '/menu'; // Переход на страницу входа
         }
@@ -61,6 +61,10 @@ const apiMethods = {
     // Пользователи
     getAccountById: (id) => api.get(`/accounts/user/${id}`),
     updateAccount: (id, data) => api.patch(`/accounts/buyer/${id}`, data),
+    createAccountBuyer: (data) => api.post('/accounts/buyer', data), // Регистрация пользователя
+    sendBuyerСonfirmationСodeEmail: (id) => api.post(`/accounts/buyer/${id}/send-code`), // Отправка кода подтверждения на Email
+    verifyBuyerСonfirmationСodeEmail: (id, code) =>
+        api.post(`/accounts/buyer/${id}/verify-code`, { code: code.toString() }), // Проверка кода подтверждения
 
     // Рабочее время ресторана
     getCurrentDeliveryTime: () => api.get(`/deliveryWork/current`), // Получение актуального времени доставки
@@ -69,6 +73,7 @@ const apiMethods = {
     // Адреса доставки
     getDeliveryAddressById: (id) => api.get(`/deliveryAddresses/address/${id}`),
     getDeliveryAddressesByIdClient: (id) => api.get(`/deliveryAddresses/${id}`),
+    getFirstAvailableSavedClientAddress: (id) => api.get(`/deliveryAddresses/address/buyer/${id}`), // Получаем первый доступный сохраненный адрес клиента
     createDeliveryAddress: (data) => api.post('/deliveryAddresses', data),
     updateDeliveryAddress: (addressId, data) => api.put(`/deliveryAddresses/${addressId}`, data),
     deleteDeliveryAddress: (addressId) => api.delete(`/deliveryAddresses/${addressId}`),

@@ -17,8 +17,8 @@ export const AuthProvider = ({ children }) => {
     const updateAuth = (status) => {
         setIsAuthenticated(status);
         if (!status) {
-            // Токен и id удаляются из локального хранилища
-            ['authUserToken', 'clientId']
+            // Токен, id пользователя и выбранный адрес удаляются из локального хранилища
+            ['authUserToken', 'clientId', 'SelectedDefaultAddressIdAuthorizedUser']
                 .forEach(key => localStorage.removeItem(key));
         }
     };

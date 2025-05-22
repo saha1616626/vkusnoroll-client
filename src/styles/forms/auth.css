@@ -80,6 +80,39 @@ body.no-scroll {
     font-size: 16px;
 }
 
+/* Контейнер поля email и кнопки отправки кода */
+.login-input-email-group-container {
+    display: grid;
+    grid-template-columns: 1fr 127.36px;
+    gap: 15px;
+}
+
+/* Контейнер поля для кода подтверждения */
+.login-input-group-container {
+    display: grid;
+    grid-template-columns: 1fr 127.36px;
+    gap: 15px;
+    height: 47.2px;
+    justify-content: space-between;
+    margin-top: 0px;
+    width: 100%;
+}
+
+/* Кнопки для работы с подтверждением email */
+.login-input-group-button-verify,
+.login-input-group-button-confirm {
+    height: 47.2px;
+    text-wrap: nowrap;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Работает таймер, кнопка заблокирована для отправки кода */
+.login-input-group-button-confirm:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* Обертка для поля пароля */
 .login-password-wrapper {
     position: relative;
@@ -98,6 +131,10 @@ body.no-scroll {
     height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
+}
+
+.login-password-wrapper input[type="password"]::-ms-reveal {
+    display: none;
 }
 
 /* Кнопка показа пароля */
@@ -119,7 +156,6 @@ body.no-scroll {
     width: 21px;
     height: 21px;
     object-fit: contain;
-    /* Пропорция формы */
 }
 
 /* Блок с ссылками */
@@ -163,13 +199,55 @@ body.no-scroll {
     background: #45a049;
 }
 
-/* Сообщение об ошибке */
-.login-form-error {
-    color: #e74c3c;
-    background: #f8d7da;
+/* Сообщения */
+.login-form-message {
+    opacity: 1;
+    visibility: visible;
+
+    /* Анимация */
+    transition:
+        opacity 0.3s ease-in-out,
+        visibility 0.3s ease-in-out;
+}
+
+.login-form-message.fade-out {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.login-form-message {
     padding: 12px;
     border-radius: 6px;
     margin-bottom: 15px;
     text-align: center;
-    border: 1px solid #f5c6cb;
+    border: 1px solid;
+
+    /* Анимация */
+    height: auto;
+    overflow: hidden;
+    transition:
+        height 0.3s ease-in-out,
+        padding 0.3s ease-in-out,
+        margin 0.3s ease-in-out;
+}
+
+.login-form-message:empty {
+    height: 0;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+/* Ошибка */
+.login-form-message.error {
+    color: #e74c3c;
+    background: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+/* Успех */
+.login-form-message.success {
+    color: #505050;
+    background: #d4edda;
+    border-color: #c3e6cb;
 }
