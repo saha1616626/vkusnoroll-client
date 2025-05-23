@@ -216,6 +216,7 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                     setEmail('');
                     setPassword('');
                     setConfirmationCode('');
+                    setShowPassword(true);
                 }
 
                 return;
@@ -377,7 +378,7 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                 ? await api.checkingCodeResettingPassword(userId, confirmationCode.toString())
                 : await api.verifyBuyerConfirmationCodeEmail(userId, confirmationCode.toString());  // Преобразуем код в строку
 
-            // Успешное подтверждение почты
+            // Успешное подтверждение почты или успешная обработка кода для восстановления пароля
             if (response.data.success) {
 
                 if (isRecoveryMode && !isConfirmEmailMode) {
@@ -386,6 +387,8 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                     setIsTimerActive(false); // Сброс таймера
                     setPassword('');
                     setConfirmPassword('');
+                    setShowPassword(true);
+                    setShowConfirmPassword(true);
                     return;
                 }
 
