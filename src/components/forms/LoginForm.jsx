@@ -37,6 +37,9 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
     const [showConfirmPassword, setShowConfirmPassword] = useState(true);
     const [isRegisterMode, setIsRegisterMode] = useState(false); // Режим регистрации
     const [isConfirmEmailMode, setIsConfirmEmailMode] = useState(false); // Режим подтверждения почты
+    const [isRecoveryMode, setIsRecoveryMode] = useState(false); // Режим восстановления пароля 
+    const [isNewPasswordEntryMode, setIsNewPasswordEntryMode] = useState(false); // Режим ввода нового пароля
+    const [showContinueButton, setShowContinueButton] = useState(true); // Видимость кнопки продолжить в режиме восстановления пароля 
     const [userId, setUserId] = useState(null); // Пользователь, которому необходимо подтвердить почту
     const [showCodeInput, setShowCodeInput] = useState(false); // Поле для ввода кода подтверждения из Email
     const [isTimerActive, setIsTimerActive] = useState(false); // Работа таймера при отправке кода подтверждения
@@ -143,6 +146,81 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // Режим восстановления пароля 
+            if (isRecoveryMode && !isNewPasswordEntryMode) {
+                // Валидация Email
+                if (!validateEmail(email)) {
+                    setMessage({
+                        text: 'Неверный формат email',
+                        type: 'error'
+                    });
+                    return;
+                }
+
+                const responseSendСonfirmationСode = await api.sendCodeBuyerRecoveryPassword(email);
+
+                if (responseSendСonfirmationСode.data.success) {
+                    // Получаем серверное время генерации кода
+                    const serverTime = new Date(responseSendСonfirmationСode.data.dateTimeСodeCreation).getTime();
+
+                    setLastCodeSentTime(serverTime);
+                    setShowCodeInput(true);
+                    setIsTimerActive(true);
+                    setShowContinueButton(false);
+                    setTimer(60); // Сбрасываем таймер на полную минуту
+                    setUserId(responseSendСonfirmationСode.data.userId);
+
+                    // Сохраняем в sessionStorage
+                    sessionStorage.setItem('lastCodeSentTime', serverTime.toString());
+                }
+
+                return;
+            }
+
+            // Режим сохранения нового пароля
+            if (isNewPasswordEntryMode) {
+                if (password !== confirmPassword) {
+                    setMessage({
+                        text: 'Пароли не совпадают',
+                        type: 'error'
+                    });
+                    return;
+                }
+
+                // Валидация пароля
+                const passwordErrors = validatePassword(password);
+                if (passwordErrors.length > 0) {
+                    setMessage({
+                        text: 'Пароль должен состоять минимум из 8 символов, цифр и букв. Кириллица не допускается',
+                        type: 'error'
+                    });
+                    return;
+                }
+
+                // Метод смены пароля
+                const responseChangingPassword = await api.changingPassword(userId, password);
+                if (responseChangingPassword.data.success) {
+                    setMessage({
+                        text: 'Пароль успешно сменен! Войдите в аккаунт',
+                        type: 'success'
+                    });
+
+                    setIsRecoveryMode(false);
+                    setIsNewPasswordEntryMode(false);
+                    setIsRegisterMode(false);
+                    setIsConfirmEmailMode(false);
+                    setShowCodeInput(false);
+                    setIsTimerActive(false);
+                    setIsRecoveryMode(false);
+                    setShowContinueButton(true);
+                    setEmail('');
+                    setPassword('');
+                    setConfirmationCode('');
+                }
+
+                return;
+            }
+
             // Проверка полей в режиме регистрации
             if (isRegisterMode) {
                 // Валидация Email
@@ -166,7 +244,7 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                 const passwordErrors = validatePassword(password);
                 if (passwordErrors.length > 0) {
                     setMessage({
-                        text: 'Пароль должен состоять минимум из 8 латинских символов',
+                        text: 'Пароль должен состоять минимум из 8 символов, цифр и букв. Кириллица не допускается',
                         type: 'error'
                     });
                     return;
@@ -200,10 +278,29 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
             });
 
             // Проверка необходимости подтверждения почты
-            if (err.response?.data?.needsConfirmation && err.response?.data?.userId
-            ) {
+            if (err.response?.data?.needsConfirmation && err.response?.data?.userId) {
                 setIsConfirmEmailMode(err.response?.data?.needsConfirmation);
                 setUserId(err.response?.data?.userId);
+            }
+
+            // Обновляем таймер, если код для восстановления пароля был запрошен менее минуты назад
+            if (err.response?.data?.dateTimeСodeCreation && isRecoveryMode && err.response?.data?.userId) {
+                const serverTime = new Date(err.response?.data?.dateTimeСodeCreation).getTime();
+                setLastCodeSentTime(serverTime);
+                setUserId(err.response?.data?.userId);
+
+                // Рассчитываем оставшееся время до возможности запроса нового кода для подтверждения Email
+                const now = Date.now();
+                const timeDiff = now - serverTime;
+                const remaining = Math.ceil((60 * 1000 - timeDiff) / 1000);
+
+                if (remaining > 0) {
+                    setTimer(remaining);
+                    setIsTimerActive(true);
+                    setShowCodeInput(true);
+                    setShowContinueButton(false);
+                    return;
+                }
             }
         }
     };
@@ -241,10 +338,10 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                 }
             }
 
-            const responseSendСonfirmationСode = await api.sendBuyerСonfirmationСodeEmail(userId);
-            if (responseSendСonfirmationСode.data.success) {
+            const responseSendConfirmationCode = await api.sendBuyerConfirmationCodeEmail(userId);
+            if (responseSendConfirmationCode.data.success) {
                 // Получаем серверное время генерации кода
-                const serverTime = new Date(responseSendСonfirmationСode.data.dateTimeСodeCreation).getTime();
+                const serverTime = new Date(responseSendConfirmationCode.data.dateTimeСodeCreation).getTime();
 
                 setLastCodeSentTime(serverTime);
                 setShowCodeInput(true);
@@ -274,19 +371,33 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                 return;
             }
 
-            const response = await api.verifyBuyerСonfirmationСodeEmail(
-                userId,
-                confirmationCode.toString() // Преобразуем код в строку
-            );
+            if (!confirmationCode || confirmationCode === '') return; // Проверяем отсутствие значения
+
+            const response = isRecoveryMode && !isConfirmEmailMode
+                ? await api.checkingCodeResettingPassword(userId, confirmationCode.toString())
+                : await api.verifyBuyerConfirmationCodeEmail(userId, confirmationCode.toString());  // Преобразуем код в строку
 
             // Успешное подтверждение почты
             if (response.data.success) {
+
+                if (isRecoveryMode && !isConfirmEmailMode) {
+                    setIsNewPasswordEntryMode(true); // Режим ввода нового пароля включен
+                    setShowCodeInput(false); // Скрываем поле для ввода кода
+                    setIsTimerActive(false); // Сброс таймера
+                    setPassword('');
+                    setConfirmPassword('');
+                    return;
+                }
+
                 setShowCodeInput(false); // Скрываем поле для ввода кода
                 setIsTimerActive(false); // Сброс таймера
                 setIsConfirmEmailMode(false); // Сброс режима подтверждения почты
                 setIsRegisterMode(false); // Режим регистрации выключен
                 setConfirmationCode(''); // Очистка кода
                 setUserId(null); // Сброс userId
+                setShowContinueButton(true); // Главная кнопка формы
+
+                if (isRecoveryMode) return; // Если подтверждение почты произошло из режима восстановления пароля, то вход не осуществится
 
                 // Выполняем вход
                 const response = await api.login({ email, password });
@@ -329,7 +440,12 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
 
                 <form onSubmit={handleSubmit} className="login-form">
                     <h2 className="login-form-title">
-                        {isConfirmEmailMode ? 'Подтверждение Email' : isRegisterMode ? 'Регистрация' : 'Вход'}
+                        {
+                            isRecoveryMode && !isConfirmEmailMode ? 'Восстановление доступа'
+                                : isConfirmEmailMode ? 'Подтверждение Email'
+                                    : isRegisterMode ? 'Регистрация'
+                                        : 'Вход'
+                        }
                     </h2>
 
                     {message.text && (
@@ -342,8 +458,8 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                         </div>
                     )}
 
-                    <div className={`${isConfirmEmailMode ? 'login-input-email-group-container' : ''}`}
-                        style={{ marginTop: isConfirmEmailMode && !showCodeInput && !message.text ? '40px' : '' }}
+                    <div className={`${isConfirmEmailMode || !showContinueButton ? 'login-input-email-group-container' : ''}`}
+                        style={{ marginTop: isConfirmEmailMode && !showCodeInput && !message.text ? '40px' : '', display: isNewPasswordEntryMode ? 'none' : '' }}
                     >
                         {/* Поле Email */}
                         <div className="login-input-group">
@@ -353,13 +469,13 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 required
-                                disabled={isConfirmEmailMode ? true : false}
-                                style={{ opacity: isConfirmEmailMode ? '0.5' : '' }}
+                                disabled={isConfirmEmailMode || !showContinueButton ? true : false}
+                                style={{ opacity: isConfirmEmailMode || !showContinueButton ? '0.5' : '' }}
                             />
                         </div>
 
                         {/* Кнопка выслать код или таймер */}
-                        {isConfirmEmailMode &&
+                        {(isConfirmEmailMode || !showContinueButton) &&
                             <button
                                 type="button"
                                 className="button-control login-input-group-button-confirm"
@@ -394,14 +510,14 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                     )}
 
                     {/* Поле Пароль */}
-                    <div className="login-input-group" style={{ display: isConfirmEmailMode ? 'none' : '' }}>
+                    <div className="login-input-group" style={{ display: (isConfirmEmailMode || isRecoveryMode) && !isNewPasswordEntryMode ? 'none' : '' }}>
                         <div className="login-password-wrapper">
                             <input
                                 type={!showPassword ? 'text' : 'password'}
-                                placeholder="Пароль"
+                                placeholder={isNewPasswordEntryMode ? 'Новый пароль' : 'Пароль'}
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                required
+                                required={isRecoveryMode ? false : true}
                             />
                             <button
                                 type="button"
@@ -414,12 +530,12 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                     </div>
 
                     {/* Поле Повтор пароля (только для регистрации) */}
-                    {isRegisterMode && (
+                    {(isRegisterMode || isNewPasswordEntryMode) && (
                         <div className="login-input-group">
                             <div className="login-password-wrapper">
                                 <input
                                     type={!showConfirmPassword ? 'text' : 'password'}
-                                    placeholder="Пароль"
+                                    placeholder={isNewPasswordEntryMode ? 'Повтор нового пароля' : 'Повтор пароля'}
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
                                     required
@@ -435,16 +551,29 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                         </div>
                     )}
 
-                    <button type="submit" className="login-submit-button" style={{ display: isConfirmEmailMode ? 'none' : '' }}>
-                        {isRegisterMode ? 'Зарегистрироваться' : 'Войти'}
+                    <button type="submit" className="login-submit-button" style={{ display: (isConfirmEmailMode || !showContinueButton) && !isNewPasswordEntryMode ? 'none' : '' }}>
+                        {
+                            isNewPasswordEntryMode ? 'Сохранить' :
+                                isRecoveryMode ? 'Продолжить' :
+                                    isRegisterMode ? 'Зарегистрироваться'
+                                        : 'Войти'
+                        }
                     </button>
 
                     <div className="login-form-footer">
-                        {(!isRegisterMode && !isConfirmEmailMode) ? (
+                        {(!isRegisterMode && !isConfirmEmailMode && !isRecoveryMode) ? (
                             <>
-                                <a href="/forgot-password" className="login-link">
+                                <button
+                                    type="button"
+                                    className="login-link"
+                                    onClick={() => {
+                                        setIsRecoveryMode(true)
+                                        setEmail('');
+                                        setPassword('');
+                                    }}
+                                >
                                     Забыли пароль?
-                                </a>
+                                </button>
                                 <button
                                     type="button"
                                     className="login-link"
@@ -458,10 +587,18 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                                 type="button"
                                 className="login-link"
                                 onClick={() => {
+                                    if (isRecoveryMode) {
+                                        setEmail('');
+                                        setPassword('');
+                                        setIsNewPasswordEntryMode(false);
+                                    }
                                     setIsRegisterMode(false);
                                     setIsConfirmEmailMode(false);
                                     setShowCodeInput(false);
                                     setIsTimerActive(false);
+                                    setIsRecoveryMode(false);
+                                    setShowContinueButton(true);
+                                    setConfirmationCode('');
                                 }}
                             >
                                 Назад к входу

@@ -62,9 +62,15 @@ const apiMethods = {
     getAccountById: (id) => api.get(`/accounts/user/${id}`),
     updateAccount: (id, data) => api.patch(`/accounts/buyer/${id}`, data),
     createAccountBuyer: (data) => api.post('/accounts/buyer', data), // Регистрация пользователя
-    sendBuyerСonfirmationСodeEmail: (id) => api.post(`/accounts/buyer/${id}/send-code`), // Отправка кода подтверждения на Email
-    verifyBuyerСonfirmationСodeEmail: (id, code) =>
+    sendBuyerConfirmationCodeEmail: (id) => api.post(`/accounts/buyer/${id}/send-code`), // Отправка кода подтверждения на Email
+    verifyBuyerConfirmationCodeEmail: (id, code) =>
         api.post(`/accounts/buyer/${id}/verify-code`, { code: code.toString() }), // Проверка кода подтверждения
+    sendCodeBuyerRecoveryPassword: (email) =>
+        api.post(`/accounts/buyer/send-code-recovery`, { email: email.toString() }), // Отправка кода подтверждения для восстановления пароля к учетной записи
+    checkingCodeResettingPassword: (id, code) =>
+        api.post(`/accounts/user/${id}/verify-code`, { code: code.toString() }), // Проверка кода подтверждения, отправленного на email при восстановлении пароля
+    changingPassword: (id, password) =>
+        api.put(`/accounts/user/${id}/changing-password`, { password: password }), // Смена пароля
 
     // Рабочее время ресторана
     getCurrentDeliveryTime: () => api.get(`/deliveryWork/current`), // Получение актуального времени доставки
