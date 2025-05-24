@@ -151,7 +151,7 @@ const LoginForm = ({ onClose, onLoginSuccess }) => {
                 // Валидация Email
                 if (!validateEmail(email)) {
                     setMessage({
-                        text: 'Неверный формат email',
+                        text: 'Неверный формат Email',
                         type: 'error'
                     });
                     return;

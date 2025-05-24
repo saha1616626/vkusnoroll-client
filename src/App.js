@@ -30,7 +30,6 @@ import OrderPage from './components/pages/OrderPage'; // Страница офо
 import OrderSuccessPage from './components/pages/OrderSuccessPage'; // Страница успешного оформления заказа
 import OrderErrorPage from './components/pages/OrderErrorPage'; // Страница неуспешного оформления заказа
 
-
 function App() {
   return (
     <Router>
